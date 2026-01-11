@@ -10,7 +10,7 @@
 	"DocsURL": "https://coda.io/d/_doc8ElEMPPQ/Welcome-to-TurboStruct_suriCYLx",
 	"MarketplaceURL": "",
 	"SupportURL": "",
-	"CanContainContent": true,
+	"CanContainContent": false,
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
