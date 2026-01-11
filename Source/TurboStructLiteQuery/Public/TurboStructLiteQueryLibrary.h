@@ -33,18 +33,9 @@ public:
 
 private:
 	// === Custom thunks ===
-	DECLARE_FUNCTION(execTurboStructLiteLoadStructLogic);
 	DECLARE_FUNCTION(execTurboStructLoadArrayLogicLite);
-	DECLARE_FUNCTION(execTurboStructLiteLoadSetLogic);
-	DECLARE_FUNCTION(execTurboStructLiteLoadMapLogic);
 	DECLARE_FUNCTION(execTurboStructLiteValidateQuery);
 
-	// Category: Logic Query.
-	static void TurboStructLiteLoadStructLogic(const FString& MainSlotName, int32 SubSlotIndex, bool bAsync, const FString& QueryString, const int32& Data, const FTurboStructLiteLogicLoadComplete& OnComplete, bool bUseWriteAheadLog = false, int32 QueuePriority = 10, int32 MaxParallelThreads = 4, const FString& EncryptionKey = TEXT(""), ETurboStructLiteEncryption Encryption = ETurboStructLiteEncryption::ProjectDefault, ETurboStructLiteBatchingSetting CompressionBatching = ETurboStructLiteBatchingSetting::ProjectDefault);
-	// Category: Logic Query.
-	static void TurboStructLiteLoadSetLogic(const FString& MainSlotName, int32 SubSlotIndex, bool bAsync, const FString& QueryString, UPARAM(ref) TSet<int32>& Data, const FTurboStructLiteLogicLoadComplete& OnComplete, bool bUseWriteAheadLog = false, int32 QueuePriority = 10, int32 MaxParallelThreads = 4, const FString& EncryptionKey = TEXT(""), ETurboStructLiteEncryption Encryption = ETurboStructLiteEncryption::ProjectDefault, ETurboStructLiteBatchingSetting CompressionBatching = ETurboStructLiteBatchingSetting::ProjectDefault);
-	// Category: Logic Query.
-	static void TurboStructLiteLoadMapLogic(const FString& MainSlotName, int32 SubSlotIndex, bool bAsync, const FString& QueryString, UPARAM(ref) TMap<int32, int32>& Data, const FTurboStructLiteLogicLoadComplete& OnComplete, bool bUseWriteAheadLog = false, int32 QueuePriority = 10, int32 MaxParallelThreads = 4, const FString& EncryptionKey = TEXT(""), ETurboStructLiteEncryption Encryption = ETurboStructLiteEncryption::ProjectDefault, ETurboStructLiteBatchingSetting CompressionBatching = ETurboStructLiteBatchingSetting::ProjectDefault);
 	// Category: Logic Query.
 	static void TurboStructLiteValidateQuery(const FString& QueryString, const int32& Context, bool& IsValid, FString& ErrorMessage);
 
