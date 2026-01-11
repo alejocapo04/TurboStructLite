@@ -1,5 +1,7 @@
 # TurboStructLite
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18214587.svg)](https://doi.org/10.5281/zenodo.18214587)
+
 TurboStructLite is the free/open-source edition of **TurboStruct**: an asynchronous persistence system for **Unreal Engine 5** designed to run the save/load pipeline off the Game Thread to avoid gameplay hitches, with crash-safe atomic commits (anti-corruption) and schema evolution support.
 
 **Pro Edition (Fab/Marketplace):**
@@ -19,10 +21,6 @@ https://www.fab.com/es-es/listings/915884dc-1a43-4b85-94dc-6a707a6facdf
 - Crash-safe atomic commits (anti-corruption)
 - Schema evolution support for backward-compatible loads
 - Blueprint-friendly API + C++ implementation
-
----
-
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18214587.svg)](https://doi.org/10.5281/zenodo.18214587)
 
 ---
 
