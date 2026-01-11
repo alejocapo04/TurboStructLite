@@ -1,0 +1,59 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.2",
+	"FriendlyName": "TurboStructLite",
+	"Description": "Zero Lag. Zero UObjects. Save and Load Any Struct or Array asynchronously directly from Blueprints. Features Oodle/LZ4 compression, thread-safe queuing, and ultra-low memory usage.",
+	"Category": "SaveSystem",
+	"CreatedBy": "Aldrey, Alejo",
+	"CreatedByURL": "",
+	"DocsURL": "https://coda.io/d/_doc8ElEMPPQ/Welcome-to-TurboStruct_suriCYLx",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "TurboStructLite",
+			"Type": "Runtime",
+			"LoadingPhase": "PreLoadingScreen"
+		},
+		{
+			"Name": "TurboStructLiteQuery",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "TurboStructLiteProjectSettings",
+			"Type": "Editor",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64",
+				"Linux",
+				"Mac"
+			]
+		},
+		{
+			"Name": "TurboStructLiteEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default",
+			"PlatformAllowList": [
+				"Win64",
+				"Linux",
+				"Mac"
+			]
+		}
+	],
+	"Plugins": [
+		{
+			"Name": "StructUtils",
+			"Enabled": true
+		},
+		{
+			"Name": "PlatformCrypto",
+			"Enabled": true
+		}
+	]
+}
