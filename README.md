@@ -22,6 +22,10 @@ https://www.fab.com/es-es/listings/915884dc-1a43-4b85-94dc-6a707a6facdf
 
 ---
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18214587.svg)](https://doi.org/10.5281/zenodo.18214587)
+
+---
+
 ## Installation
 ### Option A — As a project plugin
 1. Download/clone this repository.
