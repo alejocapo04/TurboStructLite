@@ -8,8 +8,8 @@ https://www.fab.com/es-es/listings/915884dc-1a43-4b85-94dc-6a707a6facdf
 ---
 
 ## Documentation
-- **Docs (overview & guides):** <PUT_YOUR_DOCS_URL_HERE>
-- **API / Blueprint reference:** <PUT_YOUR_API_DOCS_URL_HERE>
+- **Docs (overview & guides):** https://coda.io/d/TurboStruct-Documentation_doc8ElEMPPQ/Welcome-to-TurboStruct_suriCYLx#_luSuM9LA
+- **API / Blueprint reference:** https://coda.io/d/TurboStruct-Documentation_doc8ElEMPPQ/Blueprint-API-Reference_suseOFJ_
 - **Changelog / Releases:** https://github.com/alejocapo04/TurboStructLite/releases
 
 > If you don’t have docs yet, a simple GitHub Wiki or `/docs` folder is enough to start.
