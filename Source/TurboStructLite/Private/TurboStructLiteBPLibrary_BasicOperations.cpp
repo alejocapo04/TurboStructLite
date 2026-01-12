@@ -329,6 +329,7 @@ void UTurboStructLiteBPLibrary::HandleWildcardSave(FProperty* DataProp, void* Da
 	};
 	EnqueueSaveRequest(MoveTemp(Request));
 }
+
 void UTurboStructLiteBPLibrary::TurboStructDeleteLite(const FString& MainSlotName, int32 SubSlotIndex, bool bAsync, const FTurboStructLiteDeleteComplete& OnComplete, int32 QueuePriority)
 {
 	FTurboStructLiteDeleteComplete DelegateCopy = OnComplete;
@@ -973,6 +974,7 @@ DEFINE_FUNCTION(UTurboStructLiteBPLibrary::execTurboStructLoadLiteSet)
 	}
 	HandleWildcardLoad(SetProp, SetPtr, MainSlotName, SubSlotIndex, bAsync, LoadDelegate, bUseWriteAheadLog, QueuePriority, MaxParallelThreads, EncryptionKey, static_cast<ETurboStructLiteEncryption>(Encryption), static_cast<ETurboStructLiteBatchingSetting>(CompressionBatching), TEXT("TurboStructLoadLiteSet"), TEXT("set"), TEXT("Set"), TEXT("LoadSet"));
 }
+
 
 
 

@@ -39,7 +39,9 @@ bool UTurboStructLiteBPLibrary::StructMatchesFields(const UStruct* Struct, const
 		Index++;
 	}
 	return Index == FieldNames.Num();
-}FString UTurboStructLiteBPLibrary::NormalizeTypeName(const FString& InType)
+}
+
+FString UTurboStructLiteBPLibrary::NormalizeTypeName(const FString& InType)
 {
 	FString Out = InType;
 	Out.TrimStartAndEndInline();
@@ -53,7 +55,9 @@ bool UTurboStructLiteBPLibrary::StructMatchesFields(const UStruct* Struct, const
 	}
 	Out.ReplaceInline(TEXT(" "), TEXT(""));
 	return Out.ToLower();
-}FString UTurboStructLiteBPLibrary::NormalizeMetaFieldName(const FString& InName)
+}
+
+FString UTurboStructLiteBPLibrary::NormalizeMetaFieldName(const FString& InName)
 {
 	FString Out = InName;
 	Out.TrimStartAndEndInline();
@@ -103,7 +107,9 @@ bool UTurboStructLiteBPLibrary::StructMatchesFields(const UStruct* Struct, const
 		}
 	}
 	return Out.Left(SecondLastUnderscore);
-}bool UTurboStructLiteBPLibrary::NamesMatchForMigration(const FString& MetaName, const FProperty* Property)
+}
+
+bool UTurboStructLiteBPLibrary::NamesMatchForMigration(const FString& MetaName, const FProperty* Property)
 {
 	if (!Property)
 	{
@@ -121,13 +127,17 @@ bool UTurboStructLiteBPLibrary::StructMatchesFields(const UStruct* Struct, const
 		return true;
 	}
 	return false;
-}void UTurboStructLiteBPLibrary::CopyArchiveVersions(FArchive& TargetAr, const FArchive& SourceAr)
+}
+
+void UTurboStructLiteBPLibrary::CopyArchiveVersions(FArchive& TargetAr, const FArchive& SourceAr)
 {
 	TargetAr.SetUEVer(SourceAr.UEVer());
 	TargetAr.SetLicenseeUEVer(SourceAr.LicenseeUEVer());
 	TargetAr.SetEngineVer(SourceAr.EngineVer());
 	TargetAr.SetCustomVersions(SourceAr.GetCustomVersions());
-}bool UTurboStructLiteBPLibrary::TryReadVariantFromMeta(const FTurboStructLiteFieldMeta& Meta, const uint8* DataPtr, int32 DataSize, bool bSaveOnlyMarked, const FArchive& VersionSource, FTurboStructLiteVariant& OutVariant, bool& bOutReaderError)
+}
+
+bool UTurboStructLiteBPLibrary::TryReadVariantFromMeta(const FTurboStructLiteFieldMeta& Meta, const uint8* DataPtr, int32 DataSize, bool bSaveOnlyMarked, const FArchive& VersionSource, FTurboStructLiteVariant& OutVariant, bool& bOutReaderError)
 {
 	OutVariant = FTurboStructLiteVariant();
 	bOutReaderError = false;
@@ -436,7 +446,9 @@ bool UTurboStructLiteBPLibrary::StructMatchesFields(const UStruct* Struct, const
 	}
 
 	return false;
-}bool UTurboStructLiteBPLibrary::TryApplyVariantToProperty(FProperty* Property, void* Address, const FTurboStructLiteVariant& Variant)
+}
+
+bool UTurboStructLiteBPLibrary::TryApplyVariantToProperty(FProperty* Property, void* Address, const FTurboStructLiteVariant& Variant)
 {
 	if (!Property || !Address)
 	{
@@ -657,7 +669,9 @@ bool UTurboStructLiteBPLibrary::StructMatchesFields(const UStruct* Struct, const
 	}
 
 	return false;
-}bool UTurboStructLiteBPLibrary::TryMigratePropertyValue(const FTurboStructLiteFieldMeta& Meta, FProperty* Property, void* Address, const uint8* DataPtr, int32 DataSize, bool bSaveOnlyMarked, const FArchive& VersionSource, bool& bOutReaderError)
+}
+
+bool UTurboStructLiteBPLibrary::TryMigratePropertyValue(const FTurboStructLiteFieldMeta& Meta, FProperty* Property, void* Address, const uint8* DataPtr, int32 DataSize, bool bSaveOnlyMarked, const FArchive& VersionSource, bool& bOutReaderError)
 {
 	bOutReaderError = false;
 	if (!Property || !Address || !DataPtr || DataSize <= 0)
@@ -678,7 +692,9 @@ bool UTurboStructLiteBPLibrary::StructMatchesFields(const UStruct* Struct, const
 		return false;
 	}
 	return TryApplyVariantToProperty(Property, Address, Variant);
-}bool UTurboStructLiteBPLibrary::BuildVariantFromProperty(const FProperty* Property, const void* ValuePtr, FTurboStructLiteVariant& OutVariant)
+}
+
+bool UTurboStructLiteBPLibrary::BuildVariantFromProperty(const FProperty* Property, const void* ValuePtr, FTurboStructLiteVariant& OutVariant)
 {
 	OutVariant = FTurboStructLiteVariant();
 	if (!Property || !ValuePtr)
@@ -780,7 +796,9 @@ bool UTurboStructLiteBPLibrary::StructMatchesFields(const UStruct* Struct, const
 	OutVariant.Type = ETurboStructLiteVariantType::Struct;
 	OutVariant.StringValue = Exported;
 	return true;
-}bool UTurboStructLiteBPLibrary::TurboStructLiteValidateStructLayout(const FProperty* Property, const TArray<FString>& FieldNames)
+}
+
+bool UTurboStructLiteBPLibrary::TurboStructLiteValidateStructLayout(const FProperty* Property, const TArray<FString>& FieldNames)
 {
 	if (FieldNames.IsEmpty() || !Property)
 	{
@@ -810,4 +828,5 @@ bool UTurboStructLiteBPLibrary::StructMatchesFields(const UStruct* Struct, const
 
 	return true;
 }
+
 

@@ -40,7 +40,8 @@ FReply STurboStructLiteDatabaseWidget::OnReloadClicked()
 			ShowToast(LOCTEXT("ReloadFailTurbo", "Could not reload subslot."), SNotificationItem::CS_Fail);
 		}
 	}
-	return FReply::Handled();
+
+return FReply::Handled();
 }
 
 void STurboStructLiteDatabaseWidget::HandleSearchTextChanged(const FText& InFilter)
@@ -206,5 +207,6 @@ void STurboStructLiteDatabaseWidget::HandlePropertyChanged(const FPropertyChange
 #undef LOCTEXT_NAMESPACE
 
 #endif
+
 
 

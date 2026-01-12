@@ -110,7 +110,8 @@ FText STurboStructLiteDatabaseWidget::GetSelectionSummary() const
 			Entry.Info.UncompressedSizeBytes);
 		return FText::FromString(Summary);
 	}
-	return FText::Format(LOCTEXT("MultiSelectionSummary", "{0} subslots selected."), FText::AsNumber(Entries.Num()));
+
+return FText::Format(LOCTEXT("MultiSelectionSummary", "{0} subslots selected."), FText::AsNumber(Entries.Num()));
 }
 
 FText STurboStructLiteDatabaseWidget::GetSelectionSubSummary() const
@@ -121,7 +122,8 @@ FText STurboStructLiteDatabaseWidget::GetSelectionSubSummary() const
 	{
 		return FText::GetEmpty();
 	}
-	return FText::FromString(BuildRowMeta(*Entries[0]));
+
+return FText::FromString(BuildRowMeta(*Entries[0]));
 }
 
 FText STurboStructLiteDatabaseWidget::GetDirtyLabel() const
@@ -151,7 +153,8 @@ EVisibility STurboStructLiteDatabaseWidget::GetDirtyVisibility() const
 			return EVisibility::Visible;
 		}
 	}
-	return EVisibility::Collapsed;
+
+return EVisibility::Collapsed;
 }
 
 FSlateColor STurboStructLiteDatabaseWidget::GetDetailsBackgroundColor() const
@@ -253,5 +256,6 @@ FString STurboStructLiteDatabaseWidget::BuildRowMeta(const FSaveEntry& Entry) co
 #undef LOCTEXT_NAMESPACE
 
 #endif
+
 
 

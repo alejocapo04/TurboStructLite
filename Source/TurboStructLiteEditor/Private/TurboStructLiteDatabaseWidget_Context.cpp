@@ -112,7 +112,9 @@ bool STurboStructLiteDatabaseWidget::EnsureEncryptionKey(FSaveEntry& Entry)
 				[
 					SNew(SButton)
 					.Text(LOCTEXT("EncryptionOk", "Accept"))
-					.OnClicked_Lambda([WeakDialog]() { if (TSharedPtr<SWindow> PinnedDialog = WeakDialog.Pin()) { PinnedDialog->RequestDestroyWindow(); } return FReply::Handled(); })
+					.OnClicked_Lambda([WeakDialog]() { if (TSharedPtr<SWindow> PinnedDialog = WeakDialog.Pin()) { PinnedDialog->RequestDestroyWindow(); }
+
+return FReply::Handled(); })
 				]
 				+ SHorizontalBox::Slot()
 				.AutoWidth()
@@ -120,7 +122,9 @@ bool STurboStructLiteDatabaseWidget::EnsureEncryptionKey(FSaveEntry& Entry)
 				[
 					SNew(SButton)
 					.Text(LOCTEXT("EncryptionCancel", "Cancel"))
-					.OnClicked_Lambda([WeakDialog, EnteredKey]() { *EnteredKey = FString(); if (TSharedPtr<SWindow> PinnedDialog = WeakDialog.Pin()) { PinnedDialog->RequestDestroyWindow(); } return FReply::Handled(); })
+					.OnClicked_Lambda([WeakDialog, EnteredKey]() { *EnteredKey = FString(); if (TSharedPtr<SWindow> PinnedDialog = WeakDialog.Pin()) { PinnedDialog->RequestDestroyWindow(); }
+
+return FReply::Handled(); })
 				]
 			]
 		]
@@ -150,5 +154,6 @@ bool STurboStructLiteDatabaseWidget::EnsureEncryptionKey(FSaveEntry& Entry)
 #undef LOCTEXT_NAMESPACE
 
 #endif
+
 
 

@@ -996,7 +996,8 @@ bool UTurboStructLiteBPLibrary::WriteTurboStructLiteFile(const FString& FilePath
 			Writer.Serialize(const_cast<uint8*>(Pair.Value.Data.GetData()), DataSize);
 		}
 	}
-	return FFileHelper::SaveArrayToFile(FileBytes, *FilePath);
+
+return FFileHelper::SaveArrayToFile(FileBytes, *FilePath);
 }
 
 void UTurboStructLiteBPLibrary::InvalidateSlotIndex(const FString& SlotName)
@@ -2214,5 +2215,6 @@ bool UTurboStructLiteBPLibrary::RemoveEntry(const FString& SlotName, int32 SubSl
 	InvalidateSlotIndex(SlotName);
 	return true;
 }
+
 
 

@@ -209,7 +209,8 @@ int32 UTurboStructLiteBPLibrary::ResolveBatchingMB(ETurboStructLiteBatchingSetti
 	{
 		return ActiveDefaultBatchingMB;
 	}
-	return FMath::Clamp(Value, 2, 32);
+
+return FMath::Clamp(Value, 2, 32);
 }
 
 EAsyncExecution UTurboStructLiteBPLibrary::ResolveAsyncExecution(ETurboStructLiteAsyncExecution Execution)
@@ -235,5 +236,6 @@ EAsyncExecution UTurboStructLiteBPLibrary::ResolveAsyncExecution(ETurboStructLit
 		return EAsyncExecution::ThreadPool;
 	}
 }
+
 
 

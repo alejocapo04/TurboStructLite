@@ -51,7 +51,9 @@ bool UTurboStructLiteBPLibrary::IsUnsupportedProperty(const FProperty* Property)
 	}
 
 	return false;
-}bool UTurboStructLiteBPLibrary::SerializePropertyRecursive(FProperty* Property, void* Address, TArray<uint8>& OutData, FTurboStructLiteFieldMeta& OutMeta, bool bSaveOnlyMarked)
+}
+
+bool UTurboStructLiteBPLibrary::SerializePropertyRecursive(FProperty* Property, void* Address, TArray<uint8>& OutData, FTurboStructLiteFieldMeta& OutMeta, bool bSaveOnlyMarked)
 {
 #if WITH_EDITOR
 	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SerializePropertyRecursive"));
@@ -404,7 +406,9 @@ bool UTurboStructLiteBPLibrary::IsUnsupportedProperty(const FProperty* Property)
 
 	OutMeta.Size = OutData.Num() - StartOffset;
 	return true;
-}bool UTurboStructLiteBPLibrary::ApplyMetaToStruct(const TArray<FTurboStructLiteFieldMeta>& MetaFields, const UStruct* Struct, uint8* BasePtr, const uint8* Data, int32 DataLen, int32& Offset, int32 MaxThreads, bool bSaveOnlyMarked, const FString& PathPrefix, const FArchive& VersionSource)
+}
+
+bool UTurboStructLiteBPLibrary::ApplyMetaToStruct(const TArray<FTurboStructLiteFieldMeta>& MetaFields, const UStruct* Struct, uint8* BasePtr, const uint8* Data, int32 DataLen, int32& Offset, int32 MaxThreads, bool bSaveOnlyMarked, const FString& PathPrefix, const FArchive& VersionSource)
 {
 #if WITH_EDITOR
 	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_ApplyMetaToStruct"));
@@ -722,7 +726,9 @@ bool UTurboStructLiteBPLibrary::IsUnsupportedProperty(const FProperty* Property)
 
 	Offset = FinalOffset;
 	return true;
-}bool UTurboStructLiteBPLibrary::ReadMetaFromBytes(const TArray<uint8>& InBytes, TArray<FTurboStructLiteFieldMeta>& OutFields, const uint8*& OutDataPtr, int32& OutDataLen, FString& OutErrorMessage)
+}
+
+bool UTurboStructLiteBPLibrary::ReadMetaFromBytes(const TArray<uint8>& InBytes, TArray<FTurboStructLiteFieldMeta>& OutFields, const uint8*& OutDataPtr, int32& OutDataLen, FString& OutErrorMessage)
 {
 	OutFields.Reset();
 	OutErrorMessage.Reset();
@@ -780,7 +786,9 @@ bool UTurboStructLiteBPLibrary::IsUnsupportedProperty(const FProperty* Property)
 		}
 	}
 	return true;
-}const TArray<FTurboStructLiteFieldMeta>* UTurboStructLiteBPLibrary::ResolveStructMetaFields(const TArray<FTurboStructLiteFieldMeta>& Fields, const FStructProperty* StructProp)
+}
+
+const TArray<FTurboStructLiteFieldMeta>* UTurboStructLiteBPLibrary::ResolveStructMetaFields(const TArray<FTurboStructLiteFieldMeta>& Fields, const FStructProperty* StructProp)
 {
 	if (!StructProp || Fields.Num() == 0)
 	{
@@ -796,7 +804,9 @@ bool UTurboStructLiteBPLibrary::IsUnsupportedProperty(const FProperty* Property)
 		}
 	}
 	return &Fields;
-}bool UTurboStructLiteBPLibrary::FindMetaByPropertyChain(const TArray<FTurboStructLiteFieldMeta>& MetaFields, const TArray<FProperty*>& PropertyChain, int32& OutOffset, const FTurboStructLiteFieldMeta*& OutMeta)
+}
+
+bool UTurboStructLiteBPLibrary::FindMetaByPropertyChain(const TArray<FTurboStructLiteFieldMeta>& MetaFields, const TArray<FProperty*>& PropertyChain, int32& OutOffset, const FTurboStructLiteFieldMeta*& OutMeta)
 {
 	OutOffset = 0;
 	OutMeta = nullptr;
@@ -851,7 +861,9 @@ bool UTurboStructLiteBPLibrary::IsUnsupportedProperty(const FProperty* Property)
 		CurrentFields = &FoundMeta->Children;
 	}
 	return false;
-}bool UTurboStructLiteBPLibrary::DeserializePropertyFromSlice(FProperty* Property, void* Address, const uint8* DataPtr, int32 DataSize, bool bSaveOnlyMarked, const FArchive& VersionSource)
+}
+
+bool UTurboStructLiteBPLibrary::DeserializePropertyFromSlice(FProperty* Property, void* Address, const uint8* DataPtr, int32 DataSize, bool bSaveOnlyMarked, const FArchive& VersionSource)
 {
 	if (!Property || !Address || !DataPtr || DataSize <= 0)
 	{
@@ -867,6 +879,7 @@ bool UTurboStructLiteBPLibrary::IsUnsupportedProperty(const FProperty* Property)
 	Property->SerializeItem(Slot, Address, nullptr);
 	return !ReaderView.IsError();
 }
+
 
 
 

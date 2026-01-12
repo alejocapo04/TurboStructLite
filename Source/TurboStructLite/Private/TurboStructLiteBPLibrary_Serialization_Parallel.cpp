@@ -77,7 +77,9 @@ bool UTurboStructLiteBPLibrary::IsPropertySafeForParallel(const FProperty* Prope
 		}
 	}
 	return true;
-}bool UTurboStructLiteBPLibrary::SerializeArrayParallel(FArrayProperty* ArrayProp, void* Address, TArray<uint8>& OutData, FTurboStructLiteFieldMeta& OutMeta, bool bSaveOnlyMarked)
+}
+
+bool UTurboStructLiteBPLibrary::SerializeArrayParallel(FArrayProperty* ArrayProp, void* Address, TArray<uint8>& OutData, FTurboStructLiteFieldMeta& OutMeta, bool bSaveOnlyMarked)
 {
 	FScriptArrayHelper Helper(ArrayProp, Address);
 	const int32 Num = Helper.Num();
@@ -166,6 +168,7 @@ bool UTurboStructLiteBPLibrary::IsPropertySafeForParallel(const FProperty* Prope
 	OutMeta.Size = OutData.Num() - StartOffset;
 	return true;
 }
+
 
 
 

@@ -31,7 +31,9 @@ void UTurboStructLiteBPLibrary::WriteFieldMeta(FArchive& Ar, const FTurboStructL
 	{
 		WriteFieldMeta(Ar, Child);
 	}
-}bool UTurboStructLiteBPLibrary::ReadFieldMeta(FArchive& Ar, FTurboStructLiteFieldMeta& OutMeta)
+}
+
+bool UTurboStructLiteBPLibrary::ReadFieldMeta(FArchive& Ar, FTurboStructLiteFieldMeta& OutMeta)
 {
 	Ar << OutMeta.Name;
 	Ar << OutMeta.Type;
@@ -51,7 +53,9 @@ void UTurboStructLiteBPLibrary::WriteFieldMeta(FArchive& Ar, const FTurboStructL
 		}
 	}
 	return true;
-}bool UTurboStructLiteBPLibrary::BuildDebugString(const TArray<FTurboStructLiteFieldMeta>& Fields, FString& Out)
+}
+
+bool UTurboStructLiteBPLibrary::BuildDebugString(const TArray<FTurboStructLiteFieldMeta>& Fields, FString& Out)
 {
 	if (Fields.Num() == 1)
 	{
@@ -77,7 +81,9 @@ void UTurboStructLiteBPLibrary::WriteFieldMeta(FArchive& Ar, const FTurboStructL
 	}
 	Out = FString::Join(Parts, TEXT(", "));
 	return true;
-}bool UTurboStructLiteBPLibrary::CompressBuffer(ETurboStructLiteCompression Method, const TArray<uint8>& In, TArray<uint8>& Out, int32 MaxParallelThreads, int32 ChunkBatchSizeMB)
+}
+
+bool UTurboStructLiteBPLibrary::CompressBuffer(ETurboStructLiteCompression Method, const TArray<uint8>& In, TArray<uint8>& Out, int32 MaxParallelThreads, int32 ChunkBatchSizeMB)
 {
 #if WITH_EDITOR
 	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_CompressBuffer"));
@@ -166,7 +172,9 @@ void UTurboStructLiteBPLibrary::WriteFieldMeta(FArchive& Ar, const FTurboStructL
 	}
 
 	return true;
-}bool UTurboStructLiteBPLibrary::DecompressBuffer(ETurboStructLiteCompression Method, const TArray<uint8>& In, TArray<uint8>& Out)
+}
+
+bool UTurboStructLiteBPLibrary::DecompressBuffer(ETurboStructLiteCompression Method, const TArray<uint8>& In, TArray<uint8>& Out)
 {
 #if WITH_EDITOR
 	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_DecompressBuffer"));
@@ -281,17 +289,23 @@ void UTurboStructLiteBPLibrary::WriteFieldMeta(FArchive& Ar, const FTurboStructL
 	}
 
 	return true;
-}bool UTurboStructLiteBPLibrary::SerializeWildcard(FProperty* Property, void* Address, TArray<uint8>& OutBytes, bool bSaveOnlyMarked)
+}
+
+bool UTurboStructLiteBPLibrary::SerializeWildcard(FProperty* Property, void* Address, TArray<uint8>& OutBytes, bool bSaveOnlyMarked)
 {
 #if WITH_EDITOR
 	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SerializeWildcard"));
 #endif
 	FString DebugMeta;
 	return SerializePropertyWithMeta(Property, Address, OutBytes, DebugMeta, bSaveOnlyMarked);
-}bool UTurboStructLiteBPLibrary::DeserializeWildcard(FProperty* Property, void* Address, const TArray<uint8>& InBytes, int32 OverrideMaxThreads, bool bSaveOnlyMarked)
+}
+
+bool UTurboStructLiteBPLibrary::DeserializeWildcard(FProperty* Property, void* Address, const TArray<uint8>& InBytes, int32 OverrideMaxThreads, bool bSaveOnlyMarked)
 {
 	return DeserializePropertyWithMeta(Property, Address, InBytes, OverrideMaxThreads, bSaveOnlyMarked);
-}bool UTurboStructLiteBPLibrary::SerializePropertyWithMeta(FProperty* Property, void* Address, TArray<uint8>& OutBytes, FString& OutDebugMeta, bool bSaveOnlyMarked)
+}
+
+bool UTurboStructLiteBPLibrary::SerializePropertyWithMeta(FProperty* Property, void* Address, TArray<uint8>& OutBytes, FString& OutDebugMeta, bool bSaveOnlyMarked)
 {
 #if WITH_EDITOR
 	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SerializePropertyWithMeta"));
@@ -340,7 +354,9 @@ void UTurboStructLiteBPLibrary::WriteFieldMeta(FArchive& Ar, const FTurboStructL
 		Writer.Serialize(DataBuffer.GetData(), DataBuffer.Num());
 	}
 	return true;
-}bool UTurboStructLiteBPLibrary::BuildDebugMetadataFromBytes(const TArray<uint8>& InBytes, FString& OutDebugMeta)
+}
+
+bool UTurboStructLiteBPLibrary::BuildDebugMetadataFromBytes(const TArray<uint8>& InBytes, FString& OutDebugMeta)
 {
 	OutDebugMeta.Reset();
 	if (InBytes.Num() < static_cast<int32>(sizeof(int32) * 2))
@@ -383,7 +399,9 @@ void UTurboStructLiteBPLibrary::WriteFieldMeta(FArchive& Ar, const FTurboStructL
 		}
 	}
 	return BuildDebugString(Fields, OutDebugMeta);
-}bool UTurboStructLiteBPLibrary::GetRootMetaTypeFromBytes(const TArray<uint8>& InBytes, FString& OutType)
+}
+
+bool UTurboStructLiteBPLibrary::GetRootMetaTypeFromBytes(const TArray<uint8>& InBytes, FString& OutType)
 {
 	OutType.Reset();
 	if (InBytes.Num() < static_cast<int32>(sizeof(int32) * 2))
@@ -420,7 +438,9 @@ void UTurboStructLiteBPLibrary::WriteFieldMeta(FArchive& Ar, const FTurboStructL
 	}
 	OutType = RootMeta.Type;
 	return !OutType.IsEmpty();
-}bool UTurboStructLiteBPLibrary::DeserializePropertyWithMeta(FProperty* Property, void* Address, const TArray<uint8>& InBytes, int32 OverrideMaxThreads, bool bSaveOnlyMarked)
+}
+
+bool UTurboStructLiteBPLibrary::DeserializePropertyWithMeta(FProperty* Property, void* Address, const TArray<uint8>& InBytes, int32 OverrideMaxThreads, bool bSaveOnlyMarked)
 {
 #if WITH_EDITOR
 	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_DeserializePropertyWithMeta"));
@@ -520,28 +540,41 @@ void UTurboStructLiteBPLibrary::WriteFieldMeta(FArchive& Ar, const FTurboStructL
 		return false;
 	}
 	return true;
-}bool UTurboStructLiteBPLibrary::TurboStructLiteSerializeProperty(FProperty* Property, void* Address, TArray<uint8>& OutBytes)
+}
+
+bool UTurboStructLiteBPLibrary::TurboStructLiteSerializeProperty(FProperty* Property, void* Address, TArray<uint8>& OutBytes)
 {
 	FString DebugMeta;
 	return SerializePropertyWithMeta(Property, Address, OutBytes, DebugMeta);
-}bool UTurboStructLiteBPLibrary::TurboStructLiteDeserializeProperty(FProperty* Property, void* Address, const TArray<uint8>& InBytes)
+}
+
+bool UTurboStructLiteBPLibrary::TurboStructLiteDeserializeProperty(FProperty* Property, void* Address, const TArray<uint8>& InBytes)
 {
 	return DeserializePropertyWithMeta(Property, Address, InBytes);
-}int32 UTurboStructLiteBPLibrary::GetMagic()
+}
+
+int32 UTurboStructLiteBPLibrary::GetMagic()
 {
 	return GetDefault<UTurboStructLiteBPLibrary>()->TurboStructLiteMagic;
-}int32 UTurboStructLiteBPLibrary::GetVersion()
+}
+
+int32 UTurboStructLiteBPLibrary::GetVersion()
 {
 	return GetDefault<UTurboStructLiteBPLibrary>()->TurboStructLiteVersion;
-}FString UTurboStructLiteBPLibrary::BuildStructFieldList(const UStruct* Struct)
+}
+
+FString UTurboStructLiteBPLibrary::BuildStructFieldList(const UStruct* Struct)
 {
 	TArray<FString> Names;
 	for (TFieldIterator<FProperty> It(Struct); It; ++It)
 	{
 		Names.Add(It->GetName());
 	}
-	return FString::Join(Names, TEXT(","));
-}FString UTurboStructLiteBPLibrary::BuildDebugMetadata(FProperty* Property)
+
+return FString::Join(Names, TEXT(","));
+}
+
+FString UTurboStructLiteBPLibrary::BuildDebugMetadata(FProperty* Property)
 {
 	if (!Property)
 	{
@@ -577,4 +610,5 @@ void UTurboStructLiteBPLibrary::WriteFieldMeta(FArchive& Ar, const FTurboStructL
 	}
 	return Result;
 }
+
 

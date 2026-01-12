@@ -355,7 +355,8 @@ FString FTurboStructLiteDatabaseParser::DescribeStructFields(const UStruct* Stru
 	{
 		Names.Add(DescribePropertyReadable(*It, Depth));
 	}
-	return FString::Join(Names, TEXT(", "));
+
+return FString::Join(Names, TEXT(", "));
 }
 
 void FTurboStructLiteDatabaseParser::GetStructFieldNames(const UStruct* Struct, TArray<FString>& OutNames, int32 Depth)
@@ -690,5 +691,6 @@ bool FTurboStructLiteDatabaseParser::DeserializePropertyWithMeta(FProperty* Prop
 }
 
 #endif
+
 
 

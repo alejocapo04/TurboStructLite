@@ -1254,7 +1254,8 @@ bool UTurboStructLiteQueryLibrary::ParseLogicQuery(const TArray<FTurboStructLite
 				}
 				break;
 			}
-			case ETurboStructLiteQueryTokenType::String:
+
+case ETurboStructLiteQueryTokenType::String:
 				Literal.Type = ETurboStructLiteQueryLiteralType::String;
 				Literal.StringValue = LiteralToken.Text;
 				break;
@@ -1361,6 +1362,7 @@ DEFINE_FUNCTION(UTurboStructLiteQueryLibrary::execTurboStructLiteValidateQuery)
 	IsValid = true;
 	ErrorMessage.Reset();
 }
+
 
 
 

@@ -652,6 +652,7 @@ bool UTurboStructLiteQueryLibrary::ApplyRowToStruct(const FTurboStructLiteRow& R
 	}
 	return true;
 }
+
 bool UTurboStructLiteQueryLibrary::ApplyRowsToOutput(const TArray<FTurboStructLiteRow>& Rows, FProperty* OutputProp, void* OutputPtr, FString& OutErrorMessage)
 {
 	OutErrorMessage.Reset();
@@ -738,6 +739,7 @@ bool UTurboStructLiteQueryLibrary::ApplyRowsToOutput(const TArray<FTurboStructLi
 	OutErrorMessage = TEXT("Type Error: Invalid output type for select query");
 	return false;
 }
+
 bool UTurboStructLiteQueryLibrary::ApplyAggregateToOutput(const TArray<FTurboStructLiteRow>& Rows, FProperty* OutputProp, void* OutputPtr, FString& OutErrorMessage)
 {
 	OutErrorMessage.Reset();
@@ -1235,7 +1237,8 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQueryScan(FTurboStructLiteQueryE
 						return false;
 					}
 				}
-				return UTurboStructLiteBPLibrary::DecompressBuffer(Entry.Compression, Entry.Data, OutRawBytes);
+
+return UTurboStructLiteBPLibrary::DecompressBuffer(Entry.Compression, Entry.Data, OutRawBytes);
 			};
 			const int32 TaskCount = (bUseWriteAheadLog || Context.bForceSingleThread) ? 1 : FMath::Min(Context.ClampedParallel, Context.SubSlots.Num());
 			const int32 PerTaskThreads = FMath::Max(1, Context.ClampedParallel / TaskCount);
@@ -2105,7 +2108,8 @@ FString LocalError;
 									return false;
 								}
 							}
-							return UTurboStructLiteBPLibrary::DecompressBuffer(Entry.Compression, Entry.Data, OutRawBytes);
+
+return UTurboStructLiteBPLibrary::DecompressBuffer(Entry.Compression, Entry.Data, OutRawBytes);
 						};
 						const int32 TaskCount = bUseWriteAheadLog ? 1 : FMath::Min(ClampedParallel, SubSlots.Num());
 						const int32 PerTaskThreads = FMath::Max(1, ClampedParallel / TaskCount);
@@ -2539,4 +2543,5 @@ FString LocalError;
 
 	UTurboStructLiteBPLibrary::EnqueueTask(SlotCopy, MoveTemp(Task), ClampedPriority);
 }
+
 
