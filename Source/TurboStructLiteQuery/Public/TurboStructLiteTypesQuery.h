@@ -4,7 +4,7 @@
 #include "TurboStructLiteTypes.h"
 #include "TurboStructLiteTypesQuery.generated.h"
 
-struct FStructProperty;
+class FStructProperty;
 
 UENUM(BlueprintType)
 enum class ETurboStructLiteQueryExec : uint8
