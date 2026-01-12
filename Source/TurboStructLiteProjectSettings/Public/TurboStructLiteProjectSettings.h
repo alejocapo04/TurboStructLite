@@ -30,7 +30,7 @@ public:
 	UPROPERTY(EditAnywhere, config, Category = "Encryption")
 	ETurboStructLiteEncryptionSettings DefaultEncryption = ETurboStructLiteEncryptionSettings::None;
 
-	UPROPERTY(EditAnywhere, Transient, Category = "Encryption", meta = (EditCondition = "DefaultEncryption == ETurboStructLiteEncryption::AES", EditConditionHides))
+	UPROPERTY(EditAnywhere, Transient, Category = "Encryption", meta = (EditCondition = "DefaultEncryption == ETurboStructLiteEncryptionSettings::AES", EditConditionHides))
 	FString DefaultEncryptionKey;
 
 	UPROPERTY(EditAnywhere, config, Category = "Compression")
@@ -44,6 +44,9 @@ public:
 
 	UPROPERTY(EditAnywhere, config, Category = "Logic Query")
 	int32 MaxQueryRecursionDepth = 100;
+
+	UPROPERTY(EditAnywhere, config, Category = "Debug")
+	bool bShowDebugPrintString = false;
 
 	virtual FName GetCategoryName() const override { return TEXT("Plugins"); }
 	virtual FText GetSectionText() const override;

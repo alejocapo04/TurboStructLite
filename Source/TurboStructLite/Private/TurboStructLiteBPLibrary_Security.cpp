@@ -10,9 +10,7 @@
 #include "HAL/FileManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
-#if WITH_EDITOR
-#include "Trace/Trace.inl"
-#endif
+#include "TurboStructLiteDebugMacros.h"
 FTurboStructLiteKeyProviderDelegate UTurboStructLiteBPLibrary::GlobalKeyProvider;
 
 void UTurboStructLiteBPLibrary::RegisterEncryptionKeyProvider(FTurboStructLiteKeyProviderDelegate NewProvider)

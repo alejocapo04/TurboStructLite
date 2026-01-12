@@ -10,9 +10,7 @@
 #include "HAL/FileManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
-#if WITH_EDITOR
-#include "Trace/Trace.inl"
-#endif
+#include "TurboStructLiteDebugMacros.h"
 
 bool UTurboStructLiteBPLibrary::EstimateWildcardSize(FProperty* DataProp, void* DataPtr, int64& OutSizeBytes)
 {
@@ -141,9 +139,7 @@ void UTurboStructLiteBPLibrary::HandleWildcardSave(FProperty* DataProp, void* Da
 
 	if (bAsync)
 	{
-#if WITH_EDITOR
-		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SaveWildcard_CaptureSnapshot"));
-#endif
+		TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SaveWildcard_CaptureSnapshot"));
 		if (bUseWriteAheadLog)
 		{
 			WriteWALEntry(WALPath, TEXT("Serialize snapshot start"));
@@ -178,9 +174,7 @@ void UTurboStructLiteBPLibrary::HandleWildcardSave(FProperty* DataProp, void* Da
 
 		Async(EAsyncExecution::ThreadPool, [DataProp, Snapshot = MoveTemp(Snapshot), SaveDelegate, SlotCopy, SubSlotCopy, FilePath, ResolvedCompression, ResolvedEncryption, ResolvedKey, PriorityCopy, bHasSnapshot, ClampedParallel, ResolvedBatchingSetting, bUseLog, WALPathCopy, bSaveOnlyMarked]() mutable
 		{
-#if WITH_EDITOR
-			TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SaveWildcard_AsyncTask"));
-#endif
+			TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SaveWildcard_AsyncTask"));
 			int64 EstimatedBytes = 0;
 			if (EstimateWildcardSize(DataProp, Snapshot.GetData(), EstimatedBytes))
 			{
@@ -255,9 +249,7 @@ void UTurboStructLiteBPLibrary::HandleWildcardSave(FProperty* DataProp, void* Da
 	}
 
 	TArray<uint8> RawBytes;
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SaveWildcard_SyncSerialize"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SaveWildcard_SyncSerialize"));
 	int64 EstimatedBytes = 0;
 	if (EstimateWildcardSize(DataProp, DataPtr, EstimatedBytes))
 	{

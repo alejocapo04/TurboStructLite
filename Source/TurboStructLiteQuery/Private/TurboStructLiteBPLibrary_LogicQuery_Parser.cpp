@@ -29,9 +29,7 @@
 #include "Misc/Compression.h"
 #include "Misc/DefaultValueHelper.h"
 #include "Misc/Guid.h"
-#if WITH_EDITOR
-#include "Trace/Trace.inl"
-#endif
+#include "TurboStructLiteDebugMacros.h"
 
 bool UTurboStructLiteQueryLibrary::ResolveLogicSubSlot(const FString& SlotName, int32& OutSubSlotIndex, FString& OutErrorMessage)
 {

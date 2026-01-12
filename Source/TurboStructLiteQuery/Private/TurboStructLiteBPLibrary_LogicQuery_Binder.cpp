@@ -26,9 +26,7 @@
 #include "Misc/Compression.h"
 #include "Misc/DefaultValueHelper.h"
 #include "Misc/Guid.h"
-#if WITH_EDITOR
-#include "Trace/Trace.inl"
-#endif
+#include "TurboStructLiteDebugMacros.h"
 
 bool UTurboStructLiteQueryLibrary::BuildLogicQueryContext(FProperty* DataProp, FTurboStructLiteLogicQueryContext& OutContext, FString& OutErrorMessage)
 {

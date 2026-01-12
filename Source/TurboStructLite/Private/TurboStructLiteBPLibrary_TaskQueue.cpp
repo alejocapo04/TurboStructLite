@@ -9,9 +9,7 @@
 #include "Misc/ScopeLock.h"
 #include "UObject/UnrealType.h"
 #include "Runtime/Launch/Resources/Version.h"
-#if WITH_EDITOR
-#include "Trace/Trace.inl"
-#endif
+#include "TurboStructLiteDebugMacros.h"
 
 FCriticalSection UTurboStructLiteBPLibrary::QueuesMutex;
 TMap<FString, TSharedPtr<FTurboStructLiteTaskQueue>> UTurboStructLiteBPLibrary::QueuesBySlot;
@@ -481,9 +479,7 @@ void UTurboStructLiteBPLibrary::ExecuteSaveRequest(FTurboStructLiteSaveRequest&&
 		const FString FilePathCopy = BuildSavePath(SlotCopy);
 		Async(EAsyncExecution::ThreadPool, [RawBytes = MoveTemp(RawBytes), SaveWork, Callback = MoveTemp(Callback), SlotCopy, SubSlotCopy, FilePathCopy, bUseWriteAheadLog, WALPath]() mutable
 		{
-#if WITH_EDITOR
-			TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SaveAsync"));
-#endif
+			TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SaveAsync"));
 			if (bUseWriteAheadLog)
 			{
 				WriteWALEntry(WALPath, TEXT("Async save task start"));
@@ -519,9 +515,7 @@ void UTurboStructLiteBPLibrary::ExecuteSaveRequest(FTurboStructLiteSaveRequest&&
 		return;
 	}
 
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SaveSync"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SaveSync"));
 	const bool bSavedSync = SaveWork(RawBytes);
 	EndMemoryOpMessage(SlotCopy, SubSlotCopy, true, false);
 	if (!HasActiveGameWorld())
@@ -690,9 +684,7 @@ void UTurboStructLiteBPLibrary::ExecuteLoadRequest(FTurboStructLiteLoadRequest&&
 					bool bApplied = false;
 					if (bDeserialized)
 					{
-#if WITH_EDITOR
-						TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_InstantSwap"));
-#endif
+						TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_InstantSwap"));
 						bool bSwapped = false;
 						if (FArrayProperty* ArrayProp = CastField<FArrayProperty>(DataProp))
 						{

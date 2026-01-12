@@ -23,9 +23,7 @@
 #include "Misc/ScopeLock.h"
 #include "Serialization/MemoryReader.h"
 #include "Serialization/MemoryWriter.h"
-#if WITH_EDITOR
-#include "Trace/Trace.inl"
-#endif
+#include "TurboStructLiteDebugMacros.h"
 #if TURBOSTRUCTLITE_USE_OPENSSL
 #define UI UI_ST
 THIRD_PARTY_INCLUDES_START
@@ -150,7 +148,7 @@ void UTurboStructLiteBPLibrary::UpdateMemoryPressureWarning(const FString& SlotN
 	}
 	if (bShouldLog)
 	{
-		UE_LOG(LogTurboStructLite, Warning, TEXT("%s"), *Message);
+		TURBOSTRUCTLITE_DEBUG_LOG_WARNING(Message);
 	}
 	if (!ShouldShowOnScreenWarnings() || !GEngine)
 	{
@@ -840,7 +838,7 @@ FString UTurboStructLiteBPLibrary::BuildSavePath(const FString& SlotName)
 	const FString SanitizedName = SanitizeSlotName(SlotName);
 	if (!SlotName.Equals(SanitizedName, ESearchCase::CaseSensitive))
 	{
-		UE_LOG(LogTurboStructLite, Warning, TEXT("SlotName '%s' sanitized to '%s'"), *SlotName, *SanitizedName);
+		TURBOSTRUCTLITE_DEBUG_LOG_WARNING(FString::Printf(TEXT("SlotName \"%s\" sanitized to \"%s\""), *SlotName, *SanitizedName));
 	}
 	FString Name = SanitizedName;
 	const FString BaseSaveDir = FPaths::Combine(FPaths::ProjectSavedDir(), TEXT("SaveGames"), TEXT("TurboStructLite"));
@@ -1015,9 +1013,7 @@ void UTurboStructLiteBPLibrary::InvalidateAllSlotIndexes()
 
 bool UTurboStructLiteBPLibrary::BuildSlotIndex(const FString& SlotName, FTurboStructLiteSlotIndex& OutIndex)
 {
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_BuildSlotIndex"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_BuildSlotIndex"));
 	OutIndex = FTurboStructLiteSlotIndex();
 	const FString FilePath = BuildSavePath(SlotName);
 	TUniquePtr<FArchive> Reader(IFileManager::Get().CreateFileReader(*FilePath));
@@ -1093,9 +1089,7 @@ bool UTurboStructLiteBPLibrary::BuildSlotIndex(const FString& SlotName, FTurboSt
 
 bool UTurboStructLiteBPLibrary::GetSlotIndex(const FString& SlotName, FTurboStructLiteSlotIndex& OutIndex)
 {
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_GetSlotIndex"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_GetSlotIndex"));
 	const FString SanitizedName = SanitizeSlotName(SlotName);
 	const FString FilePath = BuildSavePath(SlotName);
 	if (!FPaths::FileExists(FilePath))
@@ -1130,9 +1124,7 @@ bool UTurboStructLiteBPLibrary::GetSlotIndex(const FString& SlotName, FTurboStru
 
 bool UTurboStructLiteBPLibrary::GetCachedEntry(const FString& SlotName, int32 SubSlotIndex, FTurboStructLiteCachedEntry& OutEntry)
 {
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_Load_GetCachedEntry"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_Load_GetCachedEntry"));
 	FTurboStructLiteSlotIndex Index;
 	if (!GetSlotIndex(SlotName, Index))
 	{
@@ -1148,9 +1140,7 @@ bool UTurboStructLiteBPLibrary::GetCachedEntry(const FString& SlotName, int32 Su
 
 bool UTurboStructLiteBPLibrary::EncryptDataBuffer(ETurboStructLiteEncryption Method, const FString& Key, TArray<uint8>& InOutData)
 {
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_EncryptDataBuffer"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_EncryptDataBuffer"));
 	if (Method == ETurboStructLiteEncryption::None)
 	{
 		return true;
@@ -1326,9 +1316,7 @@ Cleanup:
 
 bool UTurboStructLiteBPLibrary::DecryptDataBuffer(ETurboStructLiteEncryption Method, const FString& Key, TArray<uint8>& InOutData)
 {
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_DecryptDataBuffer"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_DecryptDataBuffer"));
 	if (Method == ETurboStructLiteEncryption::None)
 	{
 		return true;
@@ -1447,9 +1435,7 @@ Cleanup:
 
 bool UTurboStructLiteBPLibrary::SaveEntry(const FString& SlotName, int32 SubSlotIndex, ETurboStructLiteCompression Compression, ETurboStructLiteEncryption Encryption, const FString& EncryptionKey, const TArray<uint8>& RawBytes, const FString& DebugMeta, int32 MaxParallelThreads, ETurboStructLiteBatchingSetting CompressionBatching, bool bUseWriteAheadLog, const FString& WALPath)
 {
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SaveEntry"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SaveEntry"));
 	if (bUseWriteAheadLog)
 	{
 		WriteWALEntry(WALPath, FString::Printf(TEXT("Start SaveEntry Slot=%s SubSlot=%d Bytes=%d Compression=%d Encryption=%d"), *SlotName, SubSlotIndex, RawBytes.Num(), static_cast<int32>(Compression), static_cast<int32>(Encryption)));
@@ -1901,9 +1887,7 @@ bool UTurboStructLiteBPLibrary::GetSlotInfoInternal(const FString& SlotName, FTu
 
 bool UTurboStructLiteBPLibrary::LoadEntry(const FString& SlotName, int32 SubSlotIndex, const FString& EncryptionKey, ETurboStructLiteEncryption DefaultEncryption, TArray<uint8>& OutRawBytes, bool bUseWriteAheadLog, const FString& WALPath)
 {
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_LoadEntry"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_LoadEntry"));
 	if (bUseWriteAheadLog)
 	{
 		WriteWALEntry(WALPath, FString::Printf(TEXT("Start LoadEntry Slot=%s SubSlot=%d"), *SlotName, SubSlotIndex));
@@ -1919,9 +1903,7 @@ bool UTurboStructLiteBPLibrary::LoadEntry(const FString& SlotName, int32 SubSlot
 		}
 		return false;
 	}
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_Load_OpenFile"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_Load_OpenFile"));
 	const FString FilePath = BuildSavePath(SlotName);
 	if (bUseWriteAheadLog)
 	{
@@ -1956,9 +1938,7 @@ bool UTurboStructLiteBPLibrary::LoadEntry(const FString& SlotName, int32 SubSlot
 		{
 			WriteWALEntry(WALPath, FString::Printf(TEXT("Read data Size=%d"), Cached.DataSize));
 		}
-#if WITH_EDITOR
-		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_Load_ReadData"));
-#endif
+		TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_Load_ReadData"));
 		Reader->Serialize(Entry.Data.GetData(), Cached.DataSize);
 	}
 	if (Cached.MetaSize > 0)
@@ -1976,9 +1956,7 @@ bool UTurboStructLiteBPLibrary::LoadEntry(const FString& SlotName, int32 SubSlot
 	}
 	if (EffectiveEncryption == ETurboStructLiteEncryption::AES)
 	{
-#if WITH_EDITOR
-		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_Load_Decrypt"));
-#endif
+		TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_Load_Decrypt"));
 		if (bUseWriteAheadLog)
 		{
 			WriteWALEntry(WALPath, TEXT("Decrypt start"));
@@ -2009,9 +1987,7 @@ bool UTurboStructLiteBPLibrary::LoadEntry(const FString& SlotName, int32 SubSlot
 			WriteWALEntry(WALPath, FString::Printf(TEXT("Decrypt success Size=%d"), Entry.Data.Num()));
 		}
 	}
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_Load_Decompress"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_Load_Decompress"));
 	if (bUseWriteAheadLog)
 	{
 		WriteWALEntry(WALPath, TEXT("Decompress start"));

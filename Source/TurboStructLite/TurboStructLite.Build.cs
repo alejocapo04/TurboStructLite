@@ -20,6 +20,7 @@ public class TurboStructLite : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"TurboStructLiteDebug",
 			}
 			);
 

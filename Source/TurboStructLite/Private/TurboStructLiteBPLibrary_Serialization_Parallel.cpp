@@ -12,9 +12,7 @@
 #if __has_include("Serialization/StructuredArchiveAdapters.h")
 #include "Serialization/StructuredArchiveAdapters.h"
 #endif
-#if WITH_EDITOR
-#include "Trace/Trace.inl"
-#endif
+#include "TurboStructLiteDebugMacros.h"
 #include "Async/ParallelFor.h"
 #include "HAL/ThreadSafeBool.h"
 #include "Runtime/Launch/Resources/Version.h"
@@ -149,9 +147,7 @@ bool UTurboStructLiteBPLibrary::SerializeArrayParallel(FArrayProperty* ArrayProp
 		}
 	}, EParallelForFlags::Unbalanced);
 
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SerializeArrayParallel_PostParallelFor"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SerializeArrayParallel_PostParallelFor"));
 	int32 TotalAddedSize = sizeof(int32);
 	for (const TArray<uint8>& Chunk : ChunkBuffers)
 	{

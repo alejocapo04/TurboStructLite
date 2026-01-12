@@ -11,9 +11,7 @@
 #if __has_include("Serialization/StructuredArchiveAdapters.h")
 #include "Serialization/StructuredArchiveAdapters.h"
 #endif
-#if WITH_EDITOR
-#include "Trace/Trace.inl"
-#endif
+#include "TurboStructLiteDebugMacros.h"
 #include "Async/ParallelFor.h"
 #include "HAL/ThreadSafeBool.h"
 #include "Runtime/Launch/Resources/Version.h"
@@ -85,9 +83,7 @@ bool UTurboStructLiteBPLibrary::BuildDebugString(const TArray<FTurboStructLiteFi
 
 bool UTurboStructLiteBPLibrary::CompressBuffer(ETurboStructLiteCompression Method, const TArray<uint8>& In, TArray<uint8>& Out, int32 MaxParallelThreads, int32 ChunkBatchSizeMB)
 {
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_CompressBuffer"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_CompressBuffer"));
 	Out.Reset();
 	if (In.Num() == 0)
 	{
@@ -176,9 +172,7 @@ bool UTurboStructLiteBPLibrary::CompressBuffer(ETurboStructLiteCompression Metho
 
 bool UTurboStructLiteBPLibrary::DecompressBuffer(ETurboStructLiteCompression Method, const TArray<uint8>& In, TArray<uint8>& Out)
 {
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_DecompressBuffer"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_DecompressBuffer"));
 	Out.Reset();
 	if (Method == ETurboStructLiteCompression::None)
 	{
@@ -293,9 +287,7 @@ bool UTurboStructLiteBPLibrary::DecompressBuffer(ETurboStructLiteCompression Met
 
 bool UTurboStructLiteBPLibrary::SerializeWildcard(FProperty* Property, void* Address, TArray<uint8>& OutBytes, bool bSaveOnlyMarked)
 {
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SerializeWildcard"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SerializeWildcard"));
 	FString DebugMeta;
 	return SerializePropertyWithMeta(Property, Address, OutBytes, DebugMeta, bSaveOnlyMarked);
 }
@@ -307,9 +299,7 @@ bool UTurboStructLiteBPLibrary::DeserializeWildcard(FProperty* Property, void* A
 
 bool UTurboStructLiteBPLibrary::SerializePropertyWithMeta(FProperty* Property, void* Address, TArray<uint8>& OutBytes, FString& OutDebugMeta, bool bSaveOnlyMarked)
 {
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SerializePropertyWithMeta"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SerializePropertyWithMeta"));
 	if (!Property || !Address)
 	{
 		return false;
@@ -323,9 +313,7 @@ bool UTurboStructLiteBPLibrary::SerializePropertyWithMeta(FProperty* Property, v
 	{
 		Fields.Add(MoveTemp(RootMeta));
 	}
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SerializeProperty_PostRecursive"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SerializeProperty_PostRecursive"));
 
 	TArray<uint8> MetaBytes;
 	FMemoryWriter MetaWriter(MetaBytes, true);
@@ -442,9 +430,7 @@ bool UTurboStructLiteBPLibrary::GetRootMetaTypeFromBytes(const TArray<uint8>& In
 
 bool UTurboStructLiteBPLibrary::DeserializePropertyWithMeta(FProperty* Property, void* Address, const TArray<uint8>& InBytes, int32 OverrideMaxThreads, bool bSaveOnlyMarked)
 {
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_DeserializePropertyWithMeta"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_DeserializePropertyWithMeta"));
 	if (!Property || !Address || InBytes.Num() == 0)
 	{
 		return false;

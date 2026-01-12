@@ -27,9 +27,7 @@
 #include "Misc/Compression.h"
 #include "Misc/DefaultValueHelper.h"
 #include "Misc/Guid.h"
-#if WITH_EDITOR
-#include "Trace/Trace.inl"
-#endif
+#include "TurboStructLiteDebugMacros.h"
 
 bool UTurboStructLiteQueryLibrary::EvaluateLogicQueryNode(const FTurboStructLiteQueryNode& Root, const uint8* RootPtr, const uint8* KeyPtr, const uint8* ValuePtr)
 {
@@ -1910,9 +1908,7 @@ if (bSelectMode)
 			{
 				Async(EAsyncExecution::ThreadPool, [RunSelectLoad]() mutable
 				{
-#if WITH_EDITOR
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_LoadArrayLogic_AsyncTask"));
-#endif
+					TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_LoadArrayLogic_AsyncTask"));
 					RunSelectLoad(true);
 				});
 			}
@@ -1920,17 +1916,13 @@ if (bSelectMode)
 			{
 				AsyncTask(ENamedThreads::GameThread, [RunSelectLoad]() mutable
 				{
-#if WITH_EDITOR
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_LoadArrayLogic_AsyncTask"));
-#endif
+					TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_LoadArrayLogic_AsyncTask"));
 					RunSelectLoad(true);
 				});
 			}
 			return;
 		}
-#if WITH_EDITOR
-		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_LoadArrayLogic_Sync"));
-#endif
+		TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_LoadArrayLogic_Sync"));
 		RunSelectLoad(false);
 	};
 
@@ -2517,9 +2509,7 @@ return UTurboStructLiteBPLibrary::DecompressBuffer(Entry.Compression, Entry.Data
 			{
 				Async(EAsyncExecution::ThreadPool, [RunLogicLoad]() mutable
 				{
-#if WITH_EDITOR
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_LoadArrayLogic_AsyncTask"));
-#endif
+					TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_LoadArrayLogic_AsyncTask"));
 					RunLogicLoad(true);
 				});
 			}
@@ -2527,17 +2517,13 @@ return UTurboStructLiteBPLibrary::DecompressBuffer(Entry.Compression, Entry.Data
 			{
 				AsyncTask(ENamedThreads::GameThread, [RunLogicLoad]() mutable
 				{
-#if WITH_EDITOR
-					TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_LoadArrayLogic_AsyncTask"));
-#endif
+					TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_LoadArrayLogic_AsyncTask"));
 					RunLogicLoad(true);
 				});
 			}
 			return;
 		}
-#if WITH_EDITOR
-		TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_LoadArrayLogic_Sync"));
-#endif
+		TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_LoadArrayLogic_Sync"));
 		RunLogicLoad(false);
 	};
 

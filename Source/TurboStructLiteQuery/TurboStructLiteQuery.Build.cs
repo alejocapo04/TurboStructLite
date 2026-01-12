@@ -32,7 +32,8 @@ public class TurboStructLiteQuery : ModuleRules
 			new string[]
 			{
 				"CoreUObject",
-				"Engine"
+				"Engine",
+				"TurboStructLiteDebug"
 			}
 			);
 	}

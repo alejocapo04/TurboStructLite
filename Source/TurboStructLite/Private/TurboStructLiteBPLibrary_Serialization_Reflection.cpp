@@ -11,9 +11,7 @@
 #if __has_include("Serialization/StructuredArchiveAdapters.h")
 #include "Serialization/StructuredArchiveAdapters.h"
 #endif
-#if WITH_EDITOR
-#include "Trace/Trace.inl"
-#endif
+#include "TurboStructLiteDebugMacros.h"
 #include "Async/ParallelFor.h"
 #include "HAL/ThreadSafeBool.h"
 #include "Runtime/Launch/Resources/Version.h"
@@ -55,9 +53,7 @@ bool UTurboStructLiteBPLibrary::IsUnsupportedProperty(const FProperty* Property)
 
 bool UTurboStructLiteBPLibrary::SerializePropertyRecursive(FProperty* Property, void* Address, TArray<uint8>& OutData, FTurboStructLiteFieldMeta& OutMeta, bool bSaveOnlyMarked)
 {
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SerializePropertyRecursive"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SerializePropertyRecursive"));
 	if (!ensureMsgf(Property && Address, TEXT("TurboStructLite SerializePropertyRecursive: invalid input")))
 	{
 		return false;
@@ -182,9 +178,7 @@ bool UTurboStructLiteBPLibrary::SerializePropertyRecursive(FProperty* Property, 
 
 			const int32 NumActiveWorkers = FMath::Max(1, FMath::Min(MaxThreads, WorkCount));
 
-#if WITH_EDITOR
-			TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SerializePropertyRecursive_HybridParallel"));
-#endif
+			TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SerializePropertyRecursive_HybridParallel"));
 			ParallelFor(NumActiveWorkers, [&](int32 WorkerID)
 			{
 				FScopedParallelLimitLite ThreadGuard(1);
@@ -302,9 +296,7 @@ bool UTurboStructLiteBPLibrary::SerializePropertyRecursive(FProperty* Property, 
 			}
 			OutData.Reserve(OutData.Num() + TotalAddedSize);
 
-#if WITH_EDITOR
-			TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_SerializePropertyRecursive_MergeBuffers"));
-#endif
+			TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SerializePropertyRecursive_MergeBuffers"));
 			for (int32 PropIdx = 0; PropIdx < NumProps; ++PropIdx)
 			{
 				const TArray<int32>& Tasks = PropTaskIds[PropIdx];
@@ -410,9 +402,7 @@ bool UTurboStructLiteBPLibrary::SerializePropertyRecursive(FProperty* Property, 
 
 bool UTurboStructLiteBPLibrary::ApplyMetaToStruct(const TArray<FTurboStructLiteFieldMeta>& MetaFields, const UStruct* Struct, uint8* BasePtr, const uint8* Data, int32 DataLen, int32& Offset, int32 MaxThreads, bool bSaveOnlyMarked, const FString& PathPrefix, const FArchive& VersionSource)
 {
-#if WITH_EDITOR
-	TRACE_CPUPROFILER_EVENT_SCOPE(TEXT("TurboStructLite_ApplyMetaToStruct"));
-#endif
+	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_ApplyMetaToStruct"));
 	if (!ensureMsgf(Struct && BasePtr && Data, TEXT("TurboStructLite ApplyMetaToStruct: invalid input")))
 	{
 		return false;

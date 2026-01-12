@@ -11,9 +11,7 @@
 #if __has_include("Serialization/StructuredArchiveAdapters.h")
 #include "Serialization/StructuredArchiveAdapters.h"
 #endif
-#if WITH_EDITOR
-#include "Trace/Trace.inl"
-#endif
+#include "TurboStructLiteDebugMacros.h"
 #include "Async/ParallelFor.h"
 #include "HAL/ThreadSafeBool.h"
 #include "Runtime/Launch/Resources/Version.h"

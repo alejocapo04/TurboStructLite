@@ -21,6 +21,11 @@
 			"LoadingPhase": "PreLoadingScreen"
 		},
 		{
+			"Name": "TurboStructLiteDebug",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
 			"Name": "TurboStructLiteQuery",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"

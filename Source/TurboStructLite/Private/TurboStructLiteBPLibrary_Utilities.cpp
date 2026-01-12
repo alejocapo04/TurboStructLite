@@ -10,9 +10,7 @@
 #include "HAL/FileManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
-#if WITH_EDITOR
-#include "Trace/Trace.inl"
-#endif
+#include "TurboStructLiteDebugMacros.h"
 TArray<int32> UTurboStructLiteBPLibrary::TurboStructLiteGetSubSlots(const FString& MainSlotName)
 {
 	TArray<int32> SubSlots;
