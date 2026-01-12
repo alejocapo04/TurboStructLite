@@ -4,6 +4,8 @@
 #include "TurboStructLiteTypes.h"
 #include "TurboStructLiteTypesQuery.generated.h"
 
+struct FStructProperty;
+
 UENUM(BlueprintType)
 enum class ETurboStructLiteQueryExec : uint8
 {
@@ -174,4 +176,67 @@ struct FTurboStructLiteSelectFieldInfo
 	TArray<FProperty*> PropertyChain;
 	FProperty* LeafProperty = nullptr;
 	bool bCountOnly = false;
+};
+
+struct FTurboStructLiteQueryExecutionContext
+{
+	const FString* SlotName = nullptr;
+	int32 SubSlotIndex = -1;
+	const FString* QueryString = nullptr;
+	const FString* EncryptionKey = nullptr;
+	ETurboStructLiteEncryption SelectedEncryption = ETurboStructLiteEncryption::ProjectDefault;
+	int32 MaxParallelThreads = 1;
+	bool bUseWriteAheadLog = false;
+	const FString* WALPath = nullptr;
+	UStruct* ContextStruct = nullptr;
+	FStructProperty* ContextStructProp = nullptr;
+
+	bool* bOutHasAggregates = nullptr;
+	TArray<FTurboStructLiteRow>* OutRows = nullptr;
+	FString* OutMetadata = nullptr;
+	FDateTime* OutSaveDate = nullptr;
+	FString* OutStatsText = nullptr;
+	FString* OutErrorMessage = nullptr;
+
+	FString ParsedQueryString;
+	TArray<FString> ParsedSelectFields;
+	int32 ParsedLimit = 0;
+	int32 ParsedOffset = 0;
+	FString ParsedOrderBy;
+	bool bParsedOrderDesc = false;
+	TArray<ETurboStructLiteAggregateOp> ParsedAggregateOps;
+	TArray<FString> ParsedAggregateFields;
+	TArray<FName> ParsedAggregateColumns;
+
+	bool bHasAggregates = false;
+	bool bHasOrderBy = false;
+	bool bQueryIsTrue = false;
+	bool bAggregateCountOnly = false;
+
+	FTurboStructLiteLogicQueryContext QueryContext;
+	TArray<FTurboStructLiteQueryToken> Tokens;
+	int32 ErrorPos = 0;
+	TSharedPtr<FTurboStructLiteQueryNode> Root;
+
+	TArray<FTurboStructLiteSelectFieldInfo> SelectFieldInfos;
+	FTurboStructLiteSelectFieldInfo OrderFieldInfo;
+	TArray<FTurboStructLiteSelectFieldInfo> AggregateFieldInfos;
+	TArray<int32> AggregateFieldIndices;
+
+	int32 ClampedParallel = 1;
+	double StartSeconds = 0.0;
+	FTurboStructLiteLogicQueryStats Stats;
+	TArray<FTurboStructLiteRow> Results;
+	TArray<double> SortKeys;
+	TArray<int64> AggregateCounts;
+	TArray<double> AggregateSums;
+	bool bHasLimit = false;
+	bool bHasOffset = false;
+	bool bForceSingleThread = false;
+	bool bAllowEarlyExit = false;
+	int32 MaxMatchIndex = 0;
+	bool bOffsetAppliedInLoop = false;
+	bool bLimitAppliedInLoop = false;
+	int64 FastCountValue = 0;
+	TArray<int32> SubSlots;
 };

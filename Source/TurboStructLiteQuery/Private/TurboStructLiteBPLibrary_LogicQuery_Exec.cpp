@@ -813,115 +813,124 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQueryToValue(const FString& Slot
 	return true;
 }
 
-bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, int32 SubSlotIndex, const FString& QueryString, const FString& EncryptionKey, ETurboStructLiteEncryption SelectedEncryption, int32 MaxParallelThreads, bool bUseWriteAheadLog, const FString& WALPath, UStruct* ContextStruct, bool& bOutHasAggregates, TArray<FTurboStructLiteRow>& OutRows, FString& OutMetadata, FDateTime& OutSaveDate, FString& OutStatsText, FString& OutErrorMessage)
+bool UTurboStructLiteQueryLibrary::PrepareSelectQueryExecution(FTurboStructLiteQueryExecutionContext& Context)
 {
-	OutRows.Reset();
-	OutMetadata.Reset();
-	OutSaveDate = FDateTime(0);
-	OutStatsText.Reset();
+	if (!Context.OutErrorMessage)
+	{
+		return false;
+	}
+
+	FString& OutErrorMessage = *Context.OutErrorMessage;
+	if (Context.OutRows)
+	{
+		Context.OutRows->Reset();
+	}
+	if (Context.OutMetadata)
+	{
+		Context.OutMetadata->Reset();
+	}
+	if (Context.OutSaveDate)
+	{
+		*Context.OutSaveDate = FDateTime(0);
+	}
+	if (Context.OutStatsText)
+	{
+		Context.OutStatsText->Reset();
+	}
 	OutErrorMessage.Reset();
-	bOutHasAggregates = false;
-	if (!ContextStruct)
+	if (Context.bOutHasAggregates)
+	{
+		*Context.bOutHasAggregates = false;
+	}
+
+	Context.Results.Reset();
+	Context.SortKeys.Reset();
+	Context.AggregateCounts.Reset();
+	Context.AggregateSums.Reset();
+	Context.SubSlots.Reset();
+	Context.SelectFieldInfos.Reset();
+	Context.AggregateFieldInfos.Reset();
+	Context.AggregateFieldIndices.Reset();
+	Context.Tokens.Reset();
+	Context.Root.Reset();
+
+	if (!Context.ContextStruct || !Context.ContextStructProp)
 	{
 		OutErrorMessage = TEXT("Type Error: Invalid query context");
 		return false;
 	}
+
 	TArray<FString> EmptySelectFields;
-	FString ParsedQueryString;
-	TArray<FString> ParsedSelectFields;
-	int32 ParsedLimit = 0;
-	int32 ParsedOffset = 0;
-	FString ParsedOrderBy;
-	bool bParsedOrderDesc = false;
-	TArray<ETurboStructLiteAggregateOp> ParsedAggregateOps;
-	TArray<FString> ParsedAggregateFields;
-	TArray<FName> ParsedAggregateColumns;
-	if (!ParseSelectQueryString(QueryString, EmptySelectFields, ParsedQueryString, ParsedSelectFields, ParsedLimit, ParsedOffset, ParsedOrderBy, bParsedOrderDesc, ParsedAggregateOps, ParsedAggregateFields, ParsedAggregateColumns, OutErrorMessage))
+	if (!ParseSelectQueryString(*Context.QueryString, EmptySelectFields, Context.ParsedQueryString, Context.ParsedSelectFields, Context.ParsedLimit, Context.ParsedOffset, Context.ParsedOrderBy, Context.bParsedOrderDesc, Context.ParsedAggregateOps, Context.ParsedAggregateFields, Context.ParsedAggregateColumns, OutErrorMessage))
 	{
 		return false;
 	}
-	const bool bHasAggregates = ParsedAggregateOps.Num() > 0;
-	bOutHasAggregates = bHasAggregates;
-	const bool bHasOrderBy = !ParsedOrderBy.IsEmpty();
-	FString TrimmedQuery = ParsedQueryString;
-	TrimmedQuery.TrimStartAndEndInline();
-	const bool bQueryIsTrue = TrimmedQuery.Equals(TEXT("true"), ESearchCase::IgnoreCase);
-	bool bAggregateCountOnly = bHasAggregates;
-	if (bAggregateCountOnly)
+	Context.bHasAggregates = Context.ParsedAggregateOps.Num() > 0;
+	if (Context.bOutHasAggregates)
 	{
-		for (const ETurboStructLiteAggregateOp Op : ParsedAggregateOps)
+		*Context.bOutHasAggregates = Context.bHasAggregates;
+	}
+	Context.bHasOrderBy = !Context.ParsedOrderBy.IsEmpty();
+	FString TrimmedQuery = Context.ParsedQueryString;
+	TrimmedQuery.TrimStartAndEndInline();
+	Context.bQueryIsTrue = TrimmedQuery.Equals(TEXT("true"), ESearchCase::IgnoreCase);
+	Context.bAggregateCountOnly = Context.bHasAggregates;
+	if (Context.bAggregateCountOnly)
+	{
+		for (const ETurboStructLiteAggregateOp Op : Context.ParsedAggregateOps)
 		{
 			if (Op != ETurboStructLiteAggregateOp::Count)
 			{
-				bAggregateCountOnly = false;
+				Context.bAggregateCountOnly = false;
 				break;
 			}
 		}
 	}
-	TUniquePtr<FStructProperty> ContextStructProp;
-	UScriptStruct* ScriptStruct = Cast<UScriptStruct>(ContextStruct);
-	if (!ScriptStruct)
-	{
-		OutErrorMessage = TEXT("Type Error: Context struct is invalid");
-		return false;
-	}
-	ContextStructProp = MakeUnique<FStructProperty>(FFieldVariant(), NAME_None, RF_NoFlags);
-	ContextStructProp->Struct = ScriptStruct;
-#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 4)
-	ContextStructProp->SetElementSize(ScriptStruct->GetStructureSize());
-#else
-	ContextStructProp->ElementSize = ScriptStruct->GetStructureSize();
-#endif
-	FTurboStructLiteLogicQueryContext QueryContext;
-	if (!BuildLogicQueryContext(ContextStructProp.Get(), QueryContext, OutErrorMessage))
+	if (!BuildLogicQueryContext(Context.ContextStructProp, Context.QueryContext, OutErrorMessage))
 	{
 		return false;
 	}
-	TArray<FTurboStructLiteQueryToken> Tokens;
-	int32 ErrorPos = 0;
-	if (!TokenizeLogicQuery(ParsedQueryString, Tokens, OutErrorMessage, ErrorPos))
+	Context.ErrorPos = 0;
+	if (!TokenizeLogicQuery(Context.ParsedQueryString, Context.Tokens, OutErrorMessage, Context.ErrorPos))
 	{
 		return false;
 	}
-	TSharedPtr<FTurboStructLiteQueryNode> Root;
-	if (!ParseLogicQuery(Tokens, Root, OutErrorMessage, ErrorPos))
+	if (!ParseLogicQuery(Context.Tokens, Context.Root, OutErrorMessage, Context.ErrorPos))
 	{
 		return false;
 	}
-	if (!BindLogicQuery(Root, QueryContext, OutErrorMessage, ErrorPos))
+	if (!BindLogicQuery(Context.Root, Context.QueryContext, OutErrorMessage, Context.ErrorPos))
 	{
 		return false;
 	}
-	if (ParsedSelectFields.IsEmpty() && !bHasAggregates)
+	if (Context.ParsedSelectFields.IsEmpty() && !Context.bHasAggregates)
 	{
-		if (QueryContext.RootStruct)
+		if (Context.QueryContext.RootStruct)
 		{
-			for (TFieldIterator<FProperty> It(QueryContext.RootStruct); It; ++It)
+			for (TFieldIterator<FProperty> It(Context.QueryContext.RootStruct); It; ++It)
 			{
-				ParsedSelectFields.Add(It->GetName());
+				Context.ParsedSelectFields.Add(It->GetName());
 			}
 		}
 	}
-	TArray<FTurboStructLiteSelectFieldInfo> SelectFieldInfos;
-	if (!bHasAggregates)
+	if (!Context.bHasAggregates)
 	{
-		if (!BuildSelectFieldInfos(ParsedSelectFields, QueryContext.RootStruct, SelectFieldInfos, OutErrorMessage))
+		if (!BuildSelectFieldInfos(Context.ParsedSelectFields, Context.QueryContext.RootStruct, Context.SelectFieldInfos, OutErrorMessage))
 		{
 			return false;
 		}
-		if (SelectFieldInfos.Num() == 0)
+		if (Context.SelectFieldInfos.Num() == 0)
 		{
 			OutErrorMessage = TEXT("Type Error: No valid select fields");
 			return false;
 		}
 	}
-	FTurboStructLiteSelectFieldInfo OrderFieldInfo;
-	if (bHasOrderBy)
+	if (Context.bHasOrderBy)
 	{
 		TArray<FString> OrderFields;
-		OrderFields.Add(ParsedOrderBy);
+		OrderFields.Add(Context.ParsedOrderBy);
 		TArray<FTurboStructLiteSelectFieldInfo> OrderFieldInfos;
-		if (!BuildSelectFieldInfos(OrderFields, QueryContext.RootStruct, OrderFieldInfos, OutErrorMessage))
+		if (!BuildSelectFieldInfos(OrderFields, Context.QueryContext.RootStruct, OrderFieldInfos, OutErrorMessage))
 		{
 			return false;
 		}
@@ -930,18 +939,16 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 			OutErrorMessage = TEXT("Type Error: Invalid ORDER BY field");
 			return false;
 		}
-		OrderFieldInfo = MoveTemp(OrderFieldInfos[0]);
+		Context.OrderFieldInfo = MoveTemp(OrderFieldInfos[0]);
 	}
-	TArray<FTurboStructLiteSelectFieldInfo> AggregateFieldInfos;
-	TArray<int32> AggregateFieldIndices;
-	if (bHasAggregates)
+	if (Context.bHasAggregates)
 	{
 		TArray<FString> AggregatePaths;
-		for (int32 Index = 0; Index < ParsedAggregateOps.Num(); ++Index)
+		for (int32 Index = 0; Index < Context.ParsedAggregateOps.Num(); ++Index)
 		{
-			if (ParsedAggregateOps[Index] != ETurboStructLiteAggregateOp::Count)
+			if (Context.ParsedAggregateOps[Index] != ETurboStructLiteAggregateOp::Count)
 			{
-				const FString& FieldPath = ParsedAggregateFields[Index];
+				const FString& FieldPath = Context.ParsedAggregateFields[Index];
 				if (!FieldPath.IsEmpty())
 				{
 					AggregatePaths.AddUnique(FieldPath);
@@ -950,52 +957,68 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 		}
 		if (AggregatePaths.Num() > 0)
 		{
-			if (!BuildSelectFieldInfos(AggregatePaths, QueryContext.RootStruct, AggregateFieldInfos, OutErrorMessage))
+			if (!BuildSelectFieldInfos(AggregatePaths, Context.QueryContext.RootStruct, Context.AggregateFieldInfos, OutErrorMessage))
 			{
 				return false;
 			}
 		}
 		TMap<FName, int32> AggregateIndexMap;
-		for (int32 Index = 0; Index < AggregateFieldInfos.Num(); ++Index)
+		for (int32 Index = 0; Index < Context.AggregateFieldInfos.Num(); ++Index)
 		{
-			AggregateIndexMap.Add(AggregateFieldInfos[Index].ColumnName, Index);
+			AggregateIndexMap.Add(Context.AggregateFieldInfos[Index].ColumnName, Index);
 		}
-		AggregateFieldIndices.Init(INDEX_NONE, ParsedAggregateOps.Num());
-		for (int32 Index = 0; Index < ParsedAggregateOps.Num(); ++Index)
+		Context.AggregateFieldIndices.Init(INDEX_NONE, Context.ParsedAggregateOps.Num());
+		for (int32 Index = 0; Index < Context.ParsedAggregateOps.Num(); ++Index)
 		{
-			if (ParsedAggregateOps[Index] != ETurboStructLiteAggregateOp::Count)
+			if (Context.ParsedAggregateOps[Index] != ETurboStructLiteAggregateOp::Count)
 			{
-				const FName FieldName = FName(*ParsedAggregateFields[Index]);
+				const FName FieldName = FName(*Context.ParsedAggregateFields[Index]);
 				const int32* FoundIndex = AggregateIndexMap.Find(FieldName);
 				if (!FoundIndex)
 				{
 					OutErrorMessage = TEXT("Type Error: Invalid aggregate field");
 					return false;
 				}
-				AggregateFieldIndices[Index] = *FoundIndex;
+				Context.AggregateFieldIndices[Index] = *FoundIndex;
 			}
 		}
 	}
-	const int32 ClampedParallel = FMath::Clamp(MaxParallelThreads, 1, FPlatformMisc::NumberOfCoresIncludingHyperthreads());
-	const double StartSeconds = FPlatformTime::Seconds();
-	FTurboStructLiteLogicQueryStats Stats;
-	TArray<FTurboStructLiteRow> Results;
-	TArray<double> SortKeys;
-	TArray<int64> AggregateCounts;
-	TArray<double> AggregateSums;
-	const bool bHasLimit = ParsedLimit > 0;
-	const bool bHasOffset = ParsedOffset > 0;
-	const bool bForceSingleThread = (bHasLimit || bHasOffset) && !bHasAggregates;
-	const bool bAllowEarlyExit = bForceSingleThread && bHasLimit && !bHasOrderBy;
-	const int32 MaxMatchIndex = bHasLimit ? ParsedOffset + ParsedLimit : 0;
-	bool bOffsetAppliedInLoop = false;
-	bool bLimitAppliedInLoop = false;
-	if (bHasAggregates)
+	Context.ClampedParallel = FMath::Clamp(Context.MaxParallelThreads, 1, FPlatformMisc::NumberOfCoresIncludingHyperthreads());
+	Context.StartSeconds = FPlatformTime::Seconds();
+	Context.Stats = FTurboStructLiteLogicQueryStats();
+	Context.bHasLimit = Context.ParsedLimit > 0;
+	Context.bHasOffset = Context.ParsedOffset > 0;
+	Context.bForceSingleThread = (Context.bHasLimit || Context.bHasOffset) && !Context.bHasAggregates;
+	Context.bAllowEarlyExit = Context.bForceSingleThread && Context.bHasLimit && !Context.bHasOrderBy;
+	Context.MaxMatchIndex = Context.bHasLimit ? Context.ParsedOffset + Context.ParsedLimit : 0;
+	Context.bOffsetAppliedInLoop = false;
+	Context.bLimitAppliedInLoop = false;
+	Context.FastCountValue = 0;
+	if (Context.bHasAggregates)
 	{
-		AggregateCounts.Init(0, ParsedAggregateOps.Num());
-		AggregateSums.Init(0.0, ParsedAggregateOps.Num());
+		Context.AggregateCounts.Init(0, Context.ParsedAggregateOps.Num());
+		Context.AggregateSums.Init(0.0, Context.ParsedAggregateOps.Num());
 	}
-	int64 FastCountValue = 0;
+	return true;
+}
+
+bool UTurboStructLiteQueryLibrary::ExecuteSelectQueryScan(FTurboStructLiteQueryExecutionContext& Context)
+{
+	if (!Context.OutErrorMessage || !Context.OutMetadata)
+	{
+		return false;
+	}
+
+	FString& OutErrorMessage = *Context.OutErrorMessage;
+	FString& OutMetadata = *Context.OutMetadata;
+	const FString& SlotName = *Context.SlotName;
+	const FString& EncryptionKey = *Context.EncryptionKey;
+	const FString& WALPath = *Context.WALPath;
+	const int32 SubSlotIndex = Context.SubSlotIndex;
+	const bool bUseWriteAheadLog = Context.bUseWriteAheadLog;
+	const ETurboStructLiteEncryption SelectedEncryption = Context.SelectedEncryption;
+	FStructProperty* ContextStructProp = Context.ContextStructProp;
+
 	auto ResolvePropertyPtr = [](const TArray<FProperty*>& Chain, uint8* BasePtr) -> uint8*
 	{
 		uint8* CurrentPtr = BasePtr;
@@ -1009,6 +1032,7 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 		}
 		return CurrentPtr;
 	};
+
 	auto TryGetNumericValue = [](FProperty* Property, uint8* ValuePtr, bool bCountOnly, bool bAllowString, double& OutValue) -> bool
 	{
 		if (bCountOnly)
@@ -1084,13 +1108,14 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 		}
 		return false;
 	};
-	const bool bFastCount = bAggregateCountOnly && bQueryIsTrue;
-	TArray<int32> SubSlots;
+
+	const bool bFastCount = Context.bAggregateCountOnly && Context.bQueryIsTrue;
+	Context.SubSlots.Reset();
 	if (!bFastCount)
 	{
 		if (SubSlotIndex == -1)
 		{
-			if (!UTurboStructLiteBPLibrary::ListSubSlotIndices(SlotName, SubSlots) || SubSlots.Num() == 0)
+			if (!UTurboStructLiteBPLibrary::ListSubSlotIndices(SlotName, Context.SubSlots) || Context.SubSlots.Num() == 0)
 			{
 				OutErrorMessage = TEXT("IO Error: No subslots found");
 				return false;
@@ -1098,7 +1123,7 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 		}
 		else
 		{
-			SubSlots.Add(SubSlotIndex);
+			Context.SubSlots.Add(SubSlotIndex);
 		}
 	}
 	else
@@ -1114,26 +1139,27 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 				OutErrorMessage = TEXT("IO Error: Load failed");
 				return false;
 			}
-			FastCountValue = EntryCount;
+			Context.FastCountValue = EntryCount;
 		}
 		else
 		{
-			FastCountValue = UTurboStructLiteBPLibrary::ExistsEntry(SlotName, SubSlotIndex) ? 1 : 0;
+			Context.FastCountValue = UTurboStructLiteBPLibrary::ExistsEntry(SlotName, SubSlotIndex) ? 1 : 0;
 		}
-		if (FastCountValue > 0)
+		if (Context.FastCountValue > 0)
 		{
-			for (int32 AggIndex = 0; AggIndex < ParsedAggregateOps.Num(); ++AggIndex)
+			for (int32 AggIndex = 0; AggIndex < Context.ParsedAggregateOps.Num(); ++AggIndex)
 			{
-				AggregateCounts[AggIndex] = FastCountValue;
+				Context.AggregateCounts[AggIndex] = Context.FastCountValue;
 			}
-			Stats.Scanned = FastCountValue;
-			Stats.Matched = FastCountValue;
+			Context.Stats.Scanned = Context.FastCountValue;
+			Context.Stats.Matched = Context.FastCountValue;
 		}
 	}
-	const int32 PrevParallel = UTurboStructLiteBPLibrary::SetParallelThreadLimit(ClampedParallel);
+
+	const int32 PrevParallel = UTurboStructLiteBPLibrary::SetParallelThreadLimit(Context.ClampedParallel);
 	if (!bFastCount)
 	{
-		if (SubSlots.Num() > 0)
+		if (Context.SubSlots.Num() > 0)
 		{
 			FTurboStructLiteSlotIndex SlotIndex;
 			if (!UTurboStructLiteBPLibrary::GetSlotIndex(SlotName, SlotIndex))
@@ -1143,11 +1169,11 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 				return false;
 			}
 			TArray<FTurboStructLiteCachedEntry> CachedEntries;
-			CachedEntries.SetNum(SubSlots.Num());
+			CachedEntries.SetNum(Context.SubSlots.Num());
 			bool bCacheReady = true;
-			for (int32 CacheIndex = 0; CacheIndex < SubSlots.Num(); ++CacheIndex)
+			for (int32 CacheIndex = 0; CacheIndex < Context.SubSlots.Num(); ++CacheIndex)
 			{
-				const FTurboStructLiteCachedEntry* Found = SlotIndex.Entries.Find(SubSlots[CacheIndex]);
+				const FTurboStructLiteCachedEntry* Found = SlotIndex.Entries.Find(Context.SubSlots[CacheIndex]);
 				if (!Found)
 				{
 					bCacheReady = false;
@@ -1211,49 +1237,49 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 				}
 				return UTurboStructLiteBPLibrary::DecompressBuffer(Entry.Compression, Entry.Data, OutRawBytes);
 			};
-			const int32 TaskCount = (bUseWriteAheadLog || bForceSingleThread) ? 1 : FMath::Min(ClampedParallel, SubSlots.Num());
-			const int32 PerTaskThreads = FMath::Max(1, ClampedParallel / TaskCount);
+			const int32 TaskCount = (bUseWriteAheadLog || Context.bForceSingleThread) ? 1 : FMath::Min(Context.ClampedParallel, Context.SubSlots.Num());
+			const int32 PerTaskThreads = FMath::Max(1, Context.ClampedParallel / TaskCount);
 			TArray<FTurboStructLiteRow> SubRows;
 			TArray<bool> SubMatched;
 			TArray<double> SubSortKeys;
 			TArray<FTurboStructLiteLogicQueryStats> SubStats;
 			TArray<FString> SubErrors;
-			SubRows.SetNum(SubSlots.Num());
-			SubMatched.Init(false, SubSlots.Num());
-			if (bHasOrderBy)
+			SubRows.SetNum(Context.SubSlots.Num());
+			SubMatched.Init(false, Context.SubSlots.Num());
+			if (Context.bHasOrderBy)
 			{
-				SubSortKeys.SetNum(SubSlots.Num());
+				SubSortKeys.SetNum(Context.SubSlots.Num());
 			}
-			SubStats.SetNum(SubSlots.Num());
-			SubErrors.SetNum(SubSlots.Num());
-			const int32 ItemsPerTask = FMath::DivideAndRoundUp(SubSlots.Num(), TaskCount);
+			SubStats.SetNum(Context.SubSlots.Num());
+			SubErrors.SetNum(Context.SubSlots.Num());
+			const int32 ItemsPerTask = FMath::DivideAndRoundUp(Context.SubSlots.Num(), TaskCount);
 			TArray<TArray<int64>> TaskAggregateCounts;
 			TArray<TArray<double>> TaskAggregateSums;
-			if (bHasAggregates)
+			if (Context.bHasAggregates)
 			{
 				TaskAggregateCounts.SetNum(TaskCount);
 				TaskAggregateSums.SetNum(TaskCount);
 				for (int32 TaskIndex = 0; TaskIndex < TaskCount; ++TaskIndex)
 				{
-					TaskAggregateCounts[TaskIndex].Init(0, ParsedAggregateOps.Num());
-					TaskAggregateSums[TaskIndex].Init(0.0, ParsedAggregateOps.Num());
+					TaskAggregateCounts[TaskIndex].Init(0, Context.ParsedAggregateOps.Num());
+					TaskAggregateSums[TaskIndex].Init(0.0, Context.ParsedAggregateOps.Num());
 				}
 			}
 			int32 MatchesFound = 0;
-			const bool bApplyOffsetInLoop = TaskCount == 1 && bForceSingleThread && !bHasOrderBy && !bHasAggregates;
-			if (bApplyOffsetInLoop && bHasOffset)
+			const bool bApplyOffsetInLoop = TaskCount == 1 && Context.bForceSingleThread && !Context.bHasOrderBy && !Context.bHasAggregates;
+			if (bApplyOffsetInLoop && Context.bHasOffset)
 			{
-				bOffsetAppliedInLoop = true;
+				Context.bOffsetAppliedInLoop = true;
 			}
-			if (bAllowEarlyExit && bApplyOffsetInLoop)
+			if (Context.bAllowEarlyExit && bApplyOffsetInLoop)
 			{
-				bLimitAppliedInLoop = true;
+				Context.bLimitAppliedInLoop = true;
 			}
 			ParallelFor(TaskCount, [&](int32 TaskIndex)
 			{
 				const int32 PrevTaskParallel = UTurboStructLiteBPLibrary::SetParallelThreadLimit(PerTaskThreads);
 				const int32 Start = TaskIndex * ItemsPerTask;
-				const int32 End = FMath::Min(Start + ItemsPerTask, SubSlots.Num());
+				const int32 End = FMath::Min(Start + ItemsPerTask, Context.SubSlots.Num());
 				TUniquePtr<FArchive> Reader(IFileManager::Get().CreateFileReader(*FilePath));
 				if (!Reader)
 				{
@@ -1264,8 +1290,8 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 					UTurboStructLiteBPLibrary::SetParallelThreadLimit(PrevTaskParallel);
 					return;
 				}
-				TArray<int64>* LocalAggCounts = bHasAggregates ? &TaskAggregateCounts[TaskIndex] : nullptr;
-				TArray<double>* LocalAggSums = bHasAggregates ? &TaskAggregateSums[TaskIndex] : nullptr;
+				TArray<int64>* LocalAggCounts = Context.bHasAggregates ? &TaskAggregateCounts[TaskIndex] : nullptr;
+				TArray<double>* LocalAggSums = Context.bHasAggregates ? &TaskAggregateSums[TaskIndex] : nullptr;
 				for (int32 SubSlotIdx = Start; SubSlotIdx < End; ++SubSlotIdx)
 				{
 					FTurboStructLiteLogicQueryStats LocalStats;
@@ -1276,7 +1302,7 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 					double LocalSortValue = 0.0;
 					bool bStopEarly = false;
 					FTurboStructLiteRow LocalRow;
-					const int32 CurrentSubSlot = SubSlots[SubSlotIdx];
+					const int32 CurrentSubSlot = Context.SubSlots[SubSlotIdx];
 					if (bUseWriteAheadLog)
 					{
 						UTurboStructLiteBPLibrary::WriteWALEntry(WALPath, FString::Printf(TEXT("SelectLogic SubSlot=%d"), CurrentSubSlot));
@@ -1304,7 +1330,7 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 						{
 							TArray<uint8> FullValue;
 							FString DeserializeError;
-							if (!DeserializeLogicValue(ContextStructProp.Get(), RawBytes, PerTaskThreads, FullValue, DeserializeError))
+							if (!DeserializeLogicValue(ContextStructProp, RawBytes, PerTaskThreads, FullValue, DeserializeError))
 							{
 								LocalError = DeserializeError;
 								bLocalSuccess = false;
@@ -1312,7 +1338,7 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 							else
 							{
 								LocalStats.Scanned = 1;
-								bLocalMatch = EvaluateLogicQueryNode(*Root, FullValue.GetData(), nullptr, nullptr);
+								bLocalMatch = EvaluateLogicQueryNode(*Context.Root, FullValue.GetData(), nullptr, nullptr);
 								LocalStats.Matched = bLocalMatch ? 1 : 0;
 								if (bLocalMatch)
 								{
@@ -1320,30 +1346,30 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 									if (bApplyOffsetInLoop)
 									{
 										MatchesFound++;
-										if (MatchesFound <= ParsedOffset)
+										if (MatchesFound <= Context.ParsedOffset)
 										{
 											bShouldStore = false;
 										}
 									}
-									if (bHasAggregates)
+									if (Context.bHasAggregates)
 									{
 										if (LocalAggCounts && LocalAggSums)
 										{
-											for (int32 AggIndex = 0; AggIndex < ParsedAggregateOps.Num(); ++AggIndex)
+											for (int32 AggIndex = 0; AggIndex < Context.ParsedAggregateOps.Num(); ++AggIndex)
 											{
-												if (ParsedAggregateOps[AggIndex] == ETurboStructLiteAggregateOp::Count)
+												if (Context.ParsedAggregateOps[AggIndex] == ETurboStructLiteAggregateOp::Count)
 												{
 													(*LocalAggCounts)[AggIndex] += 1;
 													continue;
 												}
-												const int32 FieldIndex = AggregateFieldIndices[AggIndex];
-												if (!AggregateFieldInfos.IsValidIndex(FieldIndex))
+												const int32 FieldIndex = Context.AggregateFieldIndices[AggIndex];
+												if (!Context.AggregateFieldInfos.IsValidIndex(FieldIndex))
 												{
 													LocalError = TEXT("Type Error: Invalid aggregate field");
 													bLocalSuccess = false;
 													break;
 												}
-												const FTurboStructLiteSelectFieldInfo& FieldInfo = AggregateFieldInfos[FieldIndex];
+												const FTurboStructLiteSelectFieldInfo& FieldInfo = Context.AggregateFieldInfos[FieldIndex];
 												uint8* FieldPtr = ResolvePropertyPtr(FieldInfo.PropertyChain, FullValue.GetData());
 												if (!FieldPtr)
 												{
@@ -1365,7 +1391,7 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 									}
 									else if (bShouldStore)
 									{
-										for (const FTurboStructLiteSelectFieldInfo& FieldInfo : SelectFieldInfos)
+										for (const FTurboStructLiteSelectFieldInfo& FieldInfo : Context.SelectFieldInfos)
 										{
 											if (FieldInfo.bCountOnly)
 											{
@@ -1412,9 +1438,9 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 												LocalRow.Columns.Add(FieldInfo.ColumnName, Variant);
 											}
 										}
-										if (bLocalSuccess && bHasOrderBy)
+										if (bLocalSuccess && Context.bHasOrderBy)
 										{
-											uint8* SortPtr = ResolvePropertyPtr(OrderFieldInfo.PropertyChain, FullValue.GetData());
+											uint8* SortPtr = ResolvePropertyPtr(Context.OrderFieldInfo.PropertyChain, FullValue.GetData());
 											if (!SortPtr)
 											{
 												LocalError = TEXT("Type Error: Invalid ORDER BY field pointer");
@@ -1423,8 +1449,8 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 											else
 											{
 												double NumericValue = 0.0;
-												const bool bSortOk = TryGetNumericValue(OrderFieldInfo.LeafProperty, SortPtr, OrderFieldInfo.bCountOnly, true, NumericValue);
-												const double Fallback = bParsedOrderDesc ? -TNumericLimits<double>::Max() : TNumericLimits<double>::Max();
+												const bool bSortOk = TryGetNumericValue(Context.OrderFieldInfo.LeafProperty, SortPtr, Context.OrderFieldInfo.bCountOnly, true, NumericValue);
+												const double Fallback = Context.bParsedOrderDesc ? -TNumericLimits<double>::Max() : TNumericLimits<double>::Max();
 												LocalSortValue = bSortOk ? NumericValue : Fallback;
 											}
 										}
@@ -1433,7 +1459,7 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 											bStoreRow = true;
 										}
 									}
-									if (bAllowEarlyExit && bApplyOffsetInLoop && MatchesFound >= MaxMatchIndex)
+									if (Context.bAllowEarlyExit && bApplyOffsetInLoop && MatchesFound >= Context.MaxMatchIndex)
 									{
 										bStopEarly = true;
 									}
@@ -1449,7 +1475,7 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 						{
 							SubMatched[SubSlotIdx] = true;
 							SubRows[SubSlotIdx] = MoveTemp(LocalRow);
-							if (bHasOrderBy)
+							if (Context.bHasOrderBy)
 							{
 								SubSortKeys[SubSlotIdx] = LocalSortValue;
 							}
@@ -1466,26 +1492,26 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 				}
 				UTurboStructLiteBPLibrary::SetParallelThreadLimit(PrevTaskParallel);
 			}, EParallelForFlags::Unbalanced);
-			if (bHasAggregates)
+			if (Context.bHasAggregates)
 			{
 				for (int32 TaskIndex = 0; TaskIndex < TaskAggregateCounts.Num(); ++TaskIndex)
 				{
 					const TArray<int64>& TaskCounts = TaskAggregateCounts[TaskIndex];
 					const TArray<double>& TaskSums = TaskAggregateSums[TaskIndex];
-					for (int32 AggIndex = 0; AggIndex < ParsedAggregateOps.Num(); ++AggIndex)
+					for (int32 AggIndex = 0; AggIndex < Context.ParsedAggregateOps.Num(); ++AggIndex)
 					{
 						if (TaskCounts.IsValidIndex(AggIndex))
 						{
-							AggregateCounts[AggIndex] += TaskCounts[AggIndex];
+							Context.AggregateCounts[AggIndex] += TaskCounts[AggIndex];
 						}
 						if (TaskSums.IsValidIndex(AggIndex))
 						{
-							AggregateSums[AggIndex] += TaskSums[AggIndex];
+							Context.AggregateSums[AggIndex] += TaskSums[AggIndex];
 						}
 					}
 				}
 			}
-			for (int32 MergeIndex = 0; MergeIndex < SubSlots.Num(); ++MergeIndex)
+			for (int32 MergeIndex = 0; MergeIndex < Context.SubSlots.Num(); ++MergeIndex)
 			{
 				if (!SubErrors[MergeIndex].IsEmpty())
 				{
@@ -1493,22 +1519,22 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 					break;
 				}
 				FTurboStructLiteLogicQueryStats LocalStats = SubStats[MergeIndex];
-				Stats.Scanned += LocalStats.Scanned;
-				Stats.Matched += LocalStats.Matched;
+				Context.Stats.Scanned += LocalStats.Scanned;
+				Context.Stats.Matched += LocalStats.Matched;
 				if (OutMetadata.IsEmpty())
 				{
 					FTurboStructLiteSubSlotInfo SubInfo;
-					if (UTurboStructLiteBPLibrary::ReadSubSlotInfoInternal(SlotName, SubSlots[MergeIndex], EncryptionKey, SelectedEncryption, SubInfo))
+					if (UTurboStructLiteBPLibrary::ReadSubSlotInfoInternal(SlotName, Context.SubSlots[MergeIndex], EncryptionKey, SelectedEncryption, SubInfo))
 					{
 						OutMetadata = SubInfo.DebugMetadata;
 					}
 				}
-				if (!bHasAggregates && SubMatched[MergeIndex])
+				if (!Context.bHasAggregates && SubMatched[MergeIndex])
 				{
-					Results.Add(MoveTemp(SubRows[MergeIndex]));
-					if (bHasOrderBy)
+					Context.Results.Add(MoveTemp(SubRows[MergeIndex]));
+					if (Context.bHasOrderBy)
 					{
-						SortKeys.Add(SubSortKeys[MergeIndex]);
+						Context.SortKeys.Add(SubSortKeys[MergeIndex]);
 					}
 				}
 			}
@@ -1519,16 +1545,31 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 	{
 		return false;
 	}
-	if (bHasAggregates)
+	return true;
+}
+
+bool UTurboStructLiteQueryLibrary::FinalizeSelectQueryResults(FTurboStructLiteQueryExecutionContext& Context)
+{
+	if (!Context.OutErrorMessage || !Context.OutRows || !Context.OutMetadata || !Context.OutSaveDate || !Context.OutStatsText)
+	{
+		return false;
+	}
+
+	FString& OutErrorMessage = *Context.OutErrorMessage;
+	if (!OutErrorMessage.IsEmpty())
+	{
+		return false;
+	}
+	if (Context.bHasAggregates)
 	{
 		FTurboStructLiteRow AggregateRow;
-		for (int32 AggIndex = 0; AggIndex < ParsedAggregateOps.Num(); ++AggIndex)
+		for (int32 AggIndex = 0; AggIndex < Context.ParsedAggregateOps.Num(); ++AggIndex)
 		{
-			const ETurboStructLiteAggregateOp Op = ParsedAggregateOps[AggIndex];
+			const ETurboStructLiteAggregateOp Op = Context.ParsedAggregateOps[AggIndex];
 			FTurboStructLiteVariant Variant;
 			if (Op == ETurboStructLiteAggregateOp::Count)
 			{
-				const int64 CountValue = AggregateCounts.IsValidIndex(AggIndex) ? AggregateCounts[AggIndex] : 0;
+				const int64 CountValue = Context.AggregateCounts.IsValidIndex(AggIndex) ? Context.AggregateCounts[AggIndex] : 0;
 				Variant.Type = ETurboStructLiteVariantType::Int;
 				Variant.IntValue = CountValue;
 				Variant.FloatValue = static_cast<double>(CountValue);
@@ -1536,74 +1577,135 @@ bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, i
 			}
 			else if (Op == ETurboStructLiteAggregateOp::Sum)
 			{
-				const double SumValue = AggregateSums.IsValidIndex(AggIndex) ? AggregateSums[AggIndex] : 0.0;
+				const double SumValue = Context.AggregateSums.IsValidIndex(AggIndex) ? Context.AggregateSums[AggIndex] : 0.0;
 				Variant.Type = ETurboStructLiteVariantType::Float;
 				Variant.FloatValue = SumValue;
 				Variant.StringValue = LexToString(SumValue);
 			}
 			else
 			{
-				const double SumValue = AggregateSums.IsValidIndex(AggIndex) ? AggregateSums[AggIndex] : 0.0;
-				const int64 CountValue = AggregateCounts.IsValidIndex(AggIndex) ? AggregateCounts[AggIndex] : 0;
+				const double SumValue = Context.AggregateSums.IsValidIndex(AggIndex) ? Context.AggregateSums[AggIndex] : 0.0;
+				const int64 CountValue = Context.AggregateCounts.IsValidIndex(AggIndex) ? Context.AggregateCounts[AggIndex] : 0;
 				const double AvgValue = CountValue > 0 ? (SumValue / static_cast<double>(CountValue)) : 0.0;
 				Variant.Type = ETurboStructLiteVariantType::Float;
 				Variant.FloatValue = AvgValue;
 				Variant.StringValue = LexToString(AvgValue);
 			}
-			if (ParsedAggregateColumns.IsValidIndex(AggIndex))
+			if (Context.ParsedAggregateColumns.IsValidIndex(AggIndex))
 			{
-				AggregateRow.Columns.Add(ParsedAggregateColumns[AggIndex], Variant);
+				AggregateRow.Columns.Add(Context.ParsedAggregateColumns[AggIndex], Variant);
 			}
 		}
-		Results.Reset();
-		Results.Add(MoveTemp(AggregateRow));
+		Context.Results.Reset();
+		Context.Results.Add(MoveTemp(AggregateRow));
 	}
 	else
 	{
-		if (bHasOrderBy && SortKeys.Num() == Results.Num() && Results.Num() > 1)
+		if (Context.bHasOrderBy && Context.SortKeys.Num() == Context.Results.Num() && Context.Results.Num() > 1)
 		{
 			TArray<int32> Order;
-			Order.SetNum(Results.Num());
-			for (int32 Index = 0; Index < Results.Num(); ++Index)
+			Order.SetNum(Context.Results.Num());
+			for (int32 Index = 0; Index < Context.Results.Num(); ++Index)
 			{
 				Order[Index] = Index;
 			}
 			Order.Sort([&](int32 A, int32 B)
 			{
-				return bParsedOrderDesc ? (SortKeys[A] > SortKeys[B]) : (SortKeys[A] < SortKeys[B]);
+				return Context.bParsedOrderDesc ? (Context.SortKeys[A] > Context.SortKeys[B]) : (Context.SortKeys[A] < Context.SortKeys[B]);
 			});
 			TArray<FTurboStructLiteRow> SortedResults;
-			SortedResults.Reserve(Results.Num());
+			SortedResults.Reserve(Context.Results.Num());
 			for (int32 Index : Order)
 			{
-				SortedResults.Add(MoveTemp(Results[Index]));
+				SortedResults.Add(MoveTemp(Context.Results[Index]));
 			}
-			Results = MoveTemp(SortedResults);
+			Context.Results = MoveTemp(SortedResults);
 		}
-		if (bHasOffset && !bOffsetAppliedInLoop)
+		if (Context.bHasOffset && !Context.bOffsetAppliedInLoop)
 		{
-			if (ParsedOffset >= Results.Num())
+			if (Context.ParsedOffset >= Context.Results.Num())
 			{
-				Results.Reset();
+				Context.Results.Reset();
 			}
-			else if (ParsedOffset > 0)
+			else if (Context.ParsedOffset > 0)
 			{
-				Results.RemoveAt(0, ParsedOffset);
+				Context.Results.RemoveAt(0, Context.ParsedOffset);
 			}
 		}
-		if (bHasLimit && !bLimitAppliedInLoop && Results.Num() > ParsedLimit)
+		if (Context.bHasLimit && !Context.bLimitAppliedInLoop && Context.Results.Num() > Context.ParsedLimit)
 		{
-			Results.SetNum(ParsedLimit);
+			Context.Results.SetNum(Context.ParsedLimit);
 		}
 	}
-	Stats.ElapsedMs = (FPlatformTime::Seconds() - StartSeconds) * 1000.0;
-	OutStatsText = FormatLogicStats(Stats);
+	Context.Stats.ElapsedMs = (FPlatformTime::Seconds() - Context.StartSeconds) * 1000.0;
+	*Context.OutStatsText = FormatLogicStats(Context.Stats);
 	FTurboStructLiteSlotInfo SlotInfo;
-	if (UTurboStructLiteBPLibrary::GetSlotInfoInternal(SlotName, SlotInfo))
+	if (UTurboStructLiteBPLibrary::GetSlotInfoInternal(*Context.SlotName, SlotInfo))
 	{
-		OutSaveDate = SlotInfo.Timestamp;
+		*Context.OutSaveDate = SlotInfo.Timestamp;
 	}
-	OutRows = MoveTemp(Results);
+	*Context.OutRows = MoveTemp(Context.Results);
+	return true;
+}
+
+bool UTurboStructLiteQueryLibrary::ExecuteSelectQuery(const FString& SlotName, int32 SubSlotIndex, const FString& QueryString, const FString& EncryptionKey, ETurboStructLiteEncryption SelectedEncryption, int32 MaxParallelThreads, bool bUseWriteAheadLog, const FString& WALPath, UStruct* ContextStruct, bool& bOutHasAggregates, TArray<FTurboStructLiteRow>& OutRows, FString& OutMetadata, FDateTime& OutSaveDate, FString& OutStatsText, FString& OutErrorMessage)
+{
+	OutRows.Reset();
+	OutMetadata.Reset();
+	OutSaveDate = FDateTime(0);
+	OutStatsText.Reset();
+	OutErrorMessage.Reset();
+	bOutHasAggregates = false;
+	if (!ContextStruct)
+	{
+		OutErrorMessage = TEXT("Type Error: Invalid query context");
+		return false;
+	}
+	UScriptStruct* ScriptStruct = Cast<UScriptStruct>(ContextStruct);
+	if (!ScriptStruct)
+	{
+		OutErrorMessage = TEXT("Type Error: Context struct is invalid");
+		return false;
+	}
+	TUniquePtr<FStructProperty> ContextStructPropOwner;
+	ContextStructPropOwner = MakeUnique<FStructProperty>(FFieldVariant(), NAME_None, RF_NoFlags);
+	ContextStructPropOwner->Struct = ScriptStruct;
+#if ENGINE_MAJOR_VERSION > 5 || (ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 4)
+	ContextStructPropOwner->SetElementSize(ScriptStruct->GetStructureSize());
+#else
+	ContextStructPropOwner->ElementSize = ScriptStruct->GetStructureSize();
+#endif
+
+	FTurboStructLiteQueryExecutionContext Context;
+	Context.SlotName = &SlotName;
+	Context.SubSlotIndex = SubSlotIndex;
+	Context.QueryString = &QueryString;
+	Context.EncryptionKey = &EncryptionKey;
+	Context.SelectedEncryption = SelectedEncryption;
+	Context.MaxParallelThreads = MaxParallelThreads;
+	Context.bUseWriteAheadLog = bUseWriteAheadLog;
+	Context.WALPath = &WALPath;
+	Context.ContextStruct = ContextStruct;
+	Context.ContextStructProp = ContextStructPropOwner.Get();
+	Context.bOutHasAggregates = &bOutHasAggregates;
+	Context.OutRows = &OutRows;
+	Context.OutMetadata = &OutMetadata;
+	Context.OutSaveDate = &OutSaveDate;
+	Context.OutStatsText = &OutStatsText;
+	Context.OutErrorMessage = &OutErrorMessage;
+
+	if (!PrepareSelectQueryExecution(Context))
+	{
+		return false;
+	}
+	if (!ExecuteSelectQueryScan(Context))
+	{
+		return false;
+	}
+	if (!FinalizeSelectQueryResults(Context))
+	{
+		return false;
+	}
 	return true;
 }
 DEFINE_FUNCTION(UTurboStructLiteQueryLibrary::execTurboStructLoadArrayLogicLite)

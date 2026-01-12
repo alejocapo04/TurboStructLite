@@ -52,6 +52,15 @@ private:
 	static UStruct* FindStructByTypeName(const FString& TypeName);
 	// Execute a SELECT/aggregate query and return rows.
 	static bool ExecuteSelectQuery(const FString& SlotName, int32 SubSlotIndex, const FString& QueryString, const FString& EncryptionKey, ETurboStructLiteEncryption SelectedEncryption, int32 MaxParallelThreads, bool bUseWriteAheadLog, const FString& WALPath, UStruct* ContextStruct, bool& bOutHasAggregates, TArray<FTurboStructLiteRow>& OutRows, FString& OutMetadata, FDateTime& OutSaveDate, FString& OutStatsText, FString& OutErrorMessage);
+	// Category: Logic Query.
+	// Prepare a query execution context.
+	static bool PrepareSelectQueryExecution(FTurboStructLiteQueryExecutionContext& Context);
+	// Category: Logic Query.
+	// Execute the scan phase for a prepared query context.
+	static bool ExecuteSelectQueryScan(FTurboStructLiteQueryExecutionContext& Context);
+	// Category: Logic Query.
+	// Finalize results for a prepared query context.
+	static bool FinalizeSelectQueryResults(FTurboStructLiteQueryExecutionContext& Context);
 	// Execute a SELECT/aggregate query and build an output value buffer.
 	static bool ExecuteSelectQueryToValue(const FString& SlotName, int32 SubSlotIndex, const FString& QueryString, const FString& EncryptionKey, ETurboStructLiteEncryption SelectedEncryption, int32 MaxParallelThreads, bool bUseWriteAheadLog, const FString& WALPath, FProperty* OutputProp, TArray<uint8>& OutValue, FString& OutMetadata, FDateTime& OutSaveDate, FString& OutStatsText, FString& OutErrorMessage);
 	// Apply aggregate results to an output property.
