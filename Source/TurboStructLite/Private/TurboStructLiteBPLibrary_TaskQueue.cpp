@@ -445,6 +445,94 @@ void UTurboStructLiteBPLibrary::EnqueueSaveRequest(FTurboStructLiteSaveRequest&&
 	EnqueueTask(SlotCopy, [Request = MoveTemp(Request)]() mutable { ExecuteSaveRequest(MoveTemp(Request)); }, Priority, MoveTemp(CancelCallback));
 }
 
+bool UTurboStructLiteBPLibrary::ExecuteSaveWork(const FString& SlotName, int32 SubSlotIndex, ETurboStructLiteCompression Compression, ETurboStructLiteEncryption Encryption, const FString& EncryptionKey, const TArray<uint8>& RawBytes, const FString& DebugMeta, int32 MaxParallelThreads, ETurboStructLiteBatchingSetting CompressionBatching, bool bUseWriteAheadLog, const FString& WALPath)
+{
+	BeginSlotOperation(SlotName);
+	TSharedPtr<FCriticalSection> OpLock = GetSlotOperationLock(SlotName);
+	bool bSaved = false;
+	{
+		FScopeLock Lock(OpLock.Get());
+		bSaved = SaveEntry(SlotName, SubSlotIndex, Compression, Encryption, EncryptionKey, RawBytes, DebugMeta, MaxParallelThreads, CompressionBatching, bUseWriteAheadLog, WALPath);
+	}
+	EndSlotOperation(SlotName);
+	return bSaved;
+}
+
+void UTurboStructLiteBPLibrary::FinalizeSaveRequestAsync(const FString& SlotName, int32 SubSlotIndex, bool bSaved, const FString& FilePath, TFunction<void(bool, FString, int32)>&& Callback, bool bUseWriteAheadLog, const FString& WALPath)
+{
+	EndMemoryOpMessage(SlotName, SubSlotIndex, true, false);
+	if (!HasActiveGameWorld())
+	{
+		if (bUseWriteAheadLog)
+		{
+			DeleteWALFile(WALPath);
+		}
+		FinishQueuedSave(SlotName);
+		return;
+	}
+	if (bUseWriteAheadLog)
+	{
+		WriteWALEntry(WALPath, bSaved ? TEXT("Save completed") : TEXT("Save failed"));
+		if (bSaved)
+		{
+			DeleteWALFile(WALPath);
+		}
+	}
+	if (Callback)
+	{
+		Callback(bSaved, FilePath, SubSlotIndex);
+	}
+	FinishQueuedSave(SlotName);
+}
+
+void UTurboStructLiteBPLibrary::FinalizeSaveRequestSync(const FString& SlotName, int32 SubSlotIndex, bool bSaved, const FString& FilePath, TFunction<void(bool, FString, int32)>&& Callback, bool bUseWriteAheadLog, const FString& WALPath)
+{
+	EndMemoryOpMessage(SlotName, SubSlotIndex, true, false);
+	if (!HasActiveGameWorld())
+	{
+		if (bUseWriteAheadLog)
+		{
+			if (bSaved)
+			{
+				DeleteWALFile(WALPath);
+			}
+		}
+		FinishQueuedSave(SlotName);
+		return;
+	}
+	if (Callback)
+	{
+		Callback(bSaved, FilePath, SubSlotIndex);
+	}
+	if (bUseWriteAheadLog)
+	{
+		WriteWALEntry(WALPath, bSaved ? TEXT("Save completed") : TEXT("Save failed"));
+		if (bSaved)
+		{
+			DeleteWALFile(WALPath);
+		}
+	}
+	FinishQueuedSave(SlotName);
+}
+
+void UTurboStructLiteBPLibrary::ExecuteSaveAsync(TArray<uint8>&& RawBytes, const FString& SlotName, int32 SubSlotIndex, ETurboStructLiteCompression Compression, ETurboStructLiteEncryption Encryption, const FString& EncryptionKey, const FString& DebugMeta, int32 MaxParallelThreads, ETurboStructLiteBatchingSetting CompressionBatching, TFunction<void(bool, FString, int32)>&& Callback, bool bUseWriteAheadLog, const FString& WALPath)
+{
+	const FString FilePathCopy = BuildSavePath(SlotName);
+	Async(EAsyncExecution::ThreadPool, [RawBytes = MoveTemp(RawBytes), SlotName, SubSlotIndex, Compression, Encryption, EncryptionKey, DebugMeta, MaxParallelThreads, CompressionBatching, Callback = MoveTemp(Callback), FilePathCopy, bUseWriteAheadLog, WALPath]() mutable
+	{
+		TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SaveAsync"));
+		if (bUseWriteAheadLog)
+		{
+			WriteWALEntry(WALPath, TEXT("Async save task start"));
+		}
+		const bool bSaved = UTurboStructLiteBPLibrary::ExecuteSaveWork(SlotName, SubSlotIndex, Compression, Encryption, EncryptionKey, RawBytes, DebugMeta, MaxParallelThreads, CompressionBatching, bUseWriteAheadLog, WALPath);
+		AsyncTask(ENamedThreads::GameThread, [SlotName, SubSlotIndex, bSaved, FilePathCopy, Callback = MoveTemp(Callback), bUseWriteAheadLog, WALPath]() mutable
+		{
+			UTurboStructLiteBPLibrary::FinalizeSaveRequestAsync(SlotName, SubSlotIndex, bSaved, FilePathCopy, MoveTemp(Callback), bUseWriteAheadLog, WALPath);
+		});
+	});
+}
+
 void UTurboStructLiteBPLibrary::ExecuteSaveRequest(FTurboStructLiteSaveRequest&& Request)
 {
 	const FString SlotCopy = MoveTemp(Request.SlotName);
@@ -461,89 +549,16 @@ void UTurboStructLiteBPLibrary::ExecuteSaveRequest(FTurboStructLiteSaveRequest&&
 	const bool bUseWriteAheadLog = Request.bUseWriteAheadLog;
 	const FString WALPath = Request.WALPath;
 
-	auto SaveWork = [SlotCopy, SubSlotCopy, CompressionCopy, EncryptionCopy, EncryptionKeyCopy, DebugMetaCopy, MaxParallelThreadsCopy, BatchingCopy, bUseWriteAheadLog, WALPath](const TArray<uint8>& Bytes) -> bool
-	{
-		BeginSlotOperation(SlotCopy);
-		TSharedPtr<FCriticalSection> OpLock = GetSlotOperationLock(SlotCopy);
-		bool bSaved = false;
-		{
-			FScopeLock Lock(OpLock.Get());
-			bSaved = SaveEntry(SlotCopy, SubSlotCopy, CompressionCopy, EncryptionCopy, EncryptionKeyCopy, Bytes, DebugMetaCopy, MaxParallelThreadsCopy, BatchingCopy, bUseWriteAheadLog, WALPath);
-		}
-		EndSlotOperation(SlotCopy);
-		return bSaved;
-	};
-
 	if (bAsync)
 	{
-		const FString FilePathCopy = BuildSavePath(SlotCopy);
-		Async(EAsyncExecution::ThreadPool, [RawBytes = MoveTemp(RawBytes), SaveWork, Callback = MoveTemp(Callback), SlotCopy, SubSlotCopy, FilePathCopy, bUseWriteAheadLog, WALPath]() mutable
-		{
-			TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SaveAsync"));
-			if (bUseWriteAheadLog)
-			{
-				WriteWALEntry(WALPath, TEXT("Async save task start"));
-			}
-			const bool bSaved = SaveWork(RawBytes);
-			AsyncTask(ENamedThreads::GameThread, [Callback = MoveTemp(Callback), bSaved, SlotCopy, SubSlotCopy, FilePathCopy, bUseWriteAheadLog, WALPath]() mutable
-			{
-				EndMemoryOpMessage(SlotCopy, SubSlotCopy, true, false);
-				if (!HasActiveGameWorld())
-				{
-					if (bUseWriteAheadLog)
-					{
-						DeleteWALFile(WALPath);
-					}
-					FinishQueuedSave(SlotCopy);
-					return;
-				}
-				if (bUseWriteAheadLog)
-				{
-					WriteWALEntry(WALPath, bSaved ? TEXT("Save completed") : TEXT("Save failed"));
-					if (bSaved)
-					{
-						DeleteWALFile(WALPath);
-					}
-				}
-				if (Callback)
-				{
-					Callback(bSaved, FilePathCopy, SubSlotCopy);
-				}
-				FinishQueuedSave(SlotCopy);
-			});
-		});
+		ExecuteSaveAsync(MoveTemp(RawBytes), SlotCopy, SubSlotCopy, CompressionCopy, EncryptionCopy, EncryptionKeyCopy, DebugMetaCopy, MaxParallelThreadsCopy, BatchingCopy, MoveTemp(Callback), bUseWriteAheadLog, WALPath);
 		return;
 	}
 
 	TURBOSTRUCTLITE_TRACE_SCOPE(TEXT("TurboStructLite_SaveSync"));
-	const bool bSavedSync = SaveWork(RawBytes);
-	EndMemoryOpMessage(SlotCopy, SubSlotCopy, true, false);
-	if (!HasActiveGameWorld())
-	{
-		if (bUseWriteAheadLog)
-		{
-			if (bSavedSync)
-			{
-				DeleteWALFile(WALPath);
-			}
-		}
-		FinishQueuedSave(SlotCopy);
-		return;
-	}
-	if (Callback)
-	{
-		const FString FilePathCopy = BuildSavePath(SlotCopy);
-		Callback(bSavedSync, FilePathCopy, SubSlotCopy);
-	}
-	if (bUseWriteAheadLog)
-	{
-		WriteWALEntry(WALPath, bSavedSync ? TEXT("Save completed") : TEXT("Save failed"));
-		if (bSavedSync)
-		{
-			DeleteWALFile(WALPath);
-		}
-	}
-	FinishQueuedSave(SlotCopy);
+	const bool bSavedSync = ExecuteSaveWork(SlotCopy, SubSlotCopy, CompressionCopy, EncryptionCopy, EncryptionKeyCopy, RawBytes, DebugMetaCopy, MaxParallelThreadsCopy, BatchingCopy, bUseWriteAheadLog, WALPath);
+	const FString FilePathCopy = BuildSavePath(SlotCopy);
+	FinalizeSaveRequestSync(SlotCopy, SubSlotCopy, bSavedSync, FilePathCopy, MoveTemp(Callback), bUseWriteAheadLog, WALPath);
 }
 
 void UTurboStructLiteBPLibrary::FinishQueuedSave(const FString& SlotName)

@@ -402,6 +402,18 @@ private:
 	static void EnqueueSaveRequest(FTurboStructLiteSaveRequest&& Request);
 	// Execute a save request (sync or async).
 	static void ExecuteSaveRequest(FTurboStructLiteSaveRequest&& Request);
+	// Category: Task queue.
+	// Execute the core save work for a slot/subslot.
+	static bool ExecuteSaveWork(const FString& SlotName, int32 SubSlotIndex, ETurboStructLiteCompression Compression, ETurboStructLiteEncryption Encryption, const FString& EncryptionKey, const TArray<uint8>& RawBytes, const FString& DebugMeta, int32 MaxParallelThreads, ETurboStructLiteBatchingSetting CompressionBatching, bool bUseWriteAheadLog, const FString& WALPath);
+	// Category: Task queue.
+	// Execute a save request on the thread pool.
+	static void ExecuteSaveAsync(TArray<uint8>&& RawBytes, const FString& SlotName, int32 SubSlotIndex, ETurboStructLiteCompression Compression, ETurboStructLiteEncryption Encryption, const FString& EncryptionKey, const FString& DebugMeta, int32 MaxParallelThreads, ETurboStructLiteBatchingSetting CompressionBatching, TFunction<void(bool, FString, int32)>&& Callback, bool bUseWriteAheadLog, const FString& WALPath);
+	// Category: Task queue.
+	// Finalize an async save on the game thread.
+	static void FinalizeSaveRequestAsync(const FString& SlotName, int32 SubSlotIndex, bool bSaved, const FString& FilePath, TFunction<void(bool, FString, int32)>&& Callback, bool bUseWriteAheadLog, const FString& WALPath);
+	// Category: Task queue.
+	// Finalize a sync save on the calling thread.
+	static void FinalizeSaveRequestSync(const FString& SlotName, int32 SubSlotIndex, bool bSaved, const FString& FilePath, TFunction<void(bool, FString, int32)>&& Callback, bool bUseWriteAheadLog, const FString& WALPath);
 	// Mark save queue as done for a slot.
 	static void FinishQueuedSave(const FString& SlotName);
 	// Queue a load request.
